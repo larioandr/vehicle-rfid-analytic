@@ -266,3 +266,10 @@ class Read(Command):
         return (self.code.code + self.bank.code + encode_ebv(self.word_ptr) +
                 encode_byte(self.word_count) + encode_word(self.rn) +
                 encode_word(self.crc))
+
+
+#
+#######################################################################
+# Reader frames
+#######################################################################
+#

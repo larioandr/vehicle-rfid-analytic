@@ -8,6 +8,10 @@ class TestDataTypes(unittest.TestCase):
         self.assertEqual(epcstd.DivideRatio.DR_8.code, "0")
         self.assertEqual(epcstd.DivideRatio.DR_643.code, "1")
 
+    def test_divide_ratio_str(self):
+        self.assertEqual(str(epcstd.DivideRatio.DR_8), '8')
+        self.assertEqual(str(epcstd.DivideRatio.DR_643), '64/3')
+
     def test_divide_ratio_eval(self):
         self.assertAlmostEqual(epcstd.DivideRatio.DR_8.eval(), 8.0)
         self.assertAlmostEqual(epcstd.DivideRatio.DR_643.eval(), 64.0/3)
@@ -24,6 +28,12 @@ class TestDataTypes(unittest.TestCase):
         self.assertEqual(epcstd.Session.S2.index, 2)
         self.assertEqual(epcstd.Session.S3.index, 3)
 
+    def test_session_str(self):
+        self.assertEqual(str(epcstd.Session.S0).upper(), "S0")
+        self.assertEqual(str(epcstd.Session.S1).upper(), "S1")
+        self.assertEqual(str(epcstd.Session.S2).upper(), "S2")
+        self.assertEqual(str(epcstd.Session.S3).upper(), "S3")
+
     def test_tag_encoding_encoding(self):
         self.assertEqual(epcstd.TagEncoding.FM0.code, '00')
         self.assertEqual(epcstd.TagEncoding.M2.code, '01')
@@ -36,14 +46,29 @@ class TestDataTypes(unittest.TestCase):
         self.assertEqual(epcstd.TagEncoding.M4.symbols_per_bit, 4)
         self.assertEqual(epcstd.TagEncoding.M8.symbols_per_bit, 8)
 
+    def test_tag_encoding_str(self):
+        self.assertEqual(str(epcstd.TagEncoding.FM0).upper(), "FM0")
+        self.assertEqual(str(epcstd.TagEncoding.M2).upper(), "M2")
+        self.assertEqual(str(epcstd.TagEncoding.M4).upper(), "M4")
+        self.assertEqual(str(epcstd.TagEncoding.M8).upper(), "M8")
+
     def test_inventory_flag_encoding(self):
         self.assertEqual(epcstd.InventoryFlag.A.code, '0')
         self.assertEqual(epcstd.InventoryFlag.B.code, '1')
+
+    def test_inventory_flag_str(self):
+        self.assertEqual(str(epcstd.InventoryFlag.A).upper(), "A")
+        self.assertEqual(str(epcstd.InventoryFlag.B).upper(), "B")
 
     def test_sel_flag_encoding(self):
         self.assertIn(epcstd.SelFlag.ALL.code, ['00', '01'])
         self.assertEqual(epcstd.SelFlag.NOT_SEL.code, '10')
         self.assertEqual(epcstd.SelFlag.SEL.code, '11')
+
+    def test_sel_flag_str(self):
+        self.assertEqual(str(epcstd.SelFlag.ALL).lower(), "all")
+        self.assertEqual(str(epcstd.SelFlag.SEL).lower(), "sl")
+        self.assertEqual(str(epcstd.SelFlag.NOT_SEL).lower(), "~sl")
 
     def test_memory_bank_encoding(self):
         self.assertEqual(epcstd.MemoryBank.RESERVED.code, '00')
@@ -57,6 +82,15 @@ class TestDataTypes(unittest.TestCase):
         self.assertEqual(epcstd.CommandCode.ACK.code, '01')
         self.assertEqual(epcstd.CommandCode.REQ_RN.code, '11000001')
         self.assertEqual(epcstd.CommandCode.READ.code, '11000010')
+
+    def test_command_code_str(self):
+        self.assertEqual(str(epcstd.CommandCode.QUERY).lower(), "query")
+        self.assertIn(str(epcstd.CommandCode.QUERY_REP).lower(),
+                      ['query_rep', 'qrep', 'queryrep'])
+        self.assertEqual(str(epcstd.CommandCode.ACK).lower(), 'ack')
+        self.assertIn(str(epcstd.CommandCode.REQ_RN).lower(),
+                      ['req_rn', 'reqrn'])
+        self.assertEqual(str(epcstd.CommandCode.READ).lower(), 'read')
 
 
 class TestEncodingFunctions(unittest.TestCase):

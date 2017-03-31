@@ -90,3 +90,7 @@ ENV/
 
 # IntelliJ Idea
 .idea
+
+# VSCode
+.vscode
+tags

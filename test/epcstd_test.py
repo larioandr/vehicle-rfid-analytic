@@ -224,3 +224,85 @@ class TestCommands(unittest.TestCase):
         self.assertIn('0xEFEF', string2)
 
 
+class TestReplies(unittest.TestCase):
+    def test_to_bytes(self):
+        self.assertEqual(epcstd.to_bytes('1122'), [0x11, 0x22])
+        self.assertEqual(epcstd.to_bytes((0xAB,)), [0xAB])
+        with self.assertRaises(ValueError):
+            epcstd.to_bytes(0xAB)
+
+    def test_query_reply_bitlen(self):
+        msg = epcstd.QueryReply(rn=0x0000)
+        self.assertEqual(msg.bitlen, 16)
+
+    def test_query_reply_str(self):
+        msg1 = epcstd.QueryReply(rn=0xABCD)
+        msg2 = epcstd.QueryReply(rn=0x1122)
+        string1 = str(msg1)
+        string2 = str(msg2)
+        self.assertIn('ABCD', string1.upper())
+        self.assertNotIn('1122', string1)
+        self.assertIn('1122', string2)
+        self.assertNotIn('ABCD', string2.upper())
+
+    def test_ack_reply_bitlen(self):
+        msg1 = epcstd.AckReply(pc=0x0000, epc='0011223344556677', crc=0x0000)
+        msg2 = epcstd.AckReply(pc=0x0000, epc='001122334455', crc=0x0000)
+        msg3 = epcstd.AckReply(pc=0x0000, epc=[0x00, 0x11, 0x22], crc=0x0000)
+        self.assertEqual(msg1.bitlen, 96)
+        self.assertEqual(msg2.bitlen, 80)
+        self.assertEqual(msg3.bitlen, 56)
+
+    def test_ack_reply_str(self):
+        msg1 = epcstd.AckReply(pc=0xABCD, epc='0011223344556677', crc=0x1234)
+        msg2 = epcstd.AckReply(pc=0xDCBA, epc='001122334455', crc=0x4321)
+        s1 = str(msg1)
+        s2 = str(msg2)
+        self.assertIn('ABCD', s1.upper())
+        self.assertNotIn('DCBA', s1.upper())
+        self.assertIn('1234', s1)
+        self.assertNotIn('4321', s1)
+        self.assertIn('0011223344556677', s1)
+        self.assertIn('DCBA', s2.upper())
+        self.assertIn('4321', s2)
+        self.assertIn('001122334455', s2)
+        self.assertNotIn('6677', s2)
+
+    def test_req_rn_reply_bitlen(self):
+        msg = epcstd.ReqRnReply(rn=0x0000, crc=0x0000)
+        self.assertEqual(msg.bitlen, 32)
+
+    def test_req_rn_reply_str(self):
+        msg1 = epcstd.ReqRnReply(rn=0xABCD, crc=0x1234)
+        msg2 = epcstd.ReqRnReply(rn=0xDCBA, crc=0x4321)
+        s1 = str(msg1)
+        s2 = str(msg2)
+        self.assertIn('ABCD', s1.upper())
+        self.assertIn('1234', s1)
+        self.assertNotIn('DCBA', s1.upper())
+        self.assertNotIn('4321', s1)
+        self.assertIn('DCBA', s2.upper())
+        self.assertIn('4321', s2)
+
+    def test_read_reply_bitlen(self):
+        msg1 = epcstd.ReadReply(data='00112233', rn=0x0000, crc=0x0000)
+        msg2 = epcstd.ReadReply(data='001122334455', rn=0x0000, crc=0x0000)
+        msg3 = epcstd.ReadReply(data=[0x00, 0x11], rn=0x0000, crc=0x0000)
+        self.assertEqual(msg1.bitlen, 65)
+        self.assertEqual(msg2.bitlen, 81)
+        self.assertEqual(msg3.bitlen, 49)
+
+    def test_read_reply_str(self):
+        msg1 = epcstd.ReadReply(data='00112233', rn=0x1234, crc=0xABCD)
+        msg2 = epcstd.ReadReply(data='AABBCC', rn=0x4321, crc=0xDCBA)
+        s1 = str(msg1)
+        s2 = str(msg2)
+        self.assertIn('00112233', s1)
+        self.assertIn('1234', s1)
+        self.assertIn('ABCD', s1.upper())
+        self.assertNotIn('AABBCC', s1.upper())
+        self.assertNotIn('4321', s1)
+        self.assertNotIn('DCBA', s1)
+        self.assertIn('AABBCC', s2.upper())
+        self.assertIn('4321', s2)
+        self.assertIn('DCBA', s2.upper())

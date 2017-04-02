@@ -1,4 +1,5 @@
 from enum import Enum
+import collections
 
 
 #
@@ -292,3 +293,105 @@ class Read(Command):
 # Reader frames
 #######################################################################
 #
+
+#
+#######################################################################
+# Tag replies
+#######################################################################
+#
+class Reply:
+    def __init__(self):
+        super().__init__()
+
+    @property
+    def bitlen(self):
+        raise NotImplementedError()
+
+
+class QueryReply(Reply):
+    def __init__(self, rn=0x0000):
+        super().__init__()
+        self.rn = rn
+
+    @property
+    def bitlen(self):
+        return 16
+
+    def __str__(self):
+        return "Reply(0x{o.rn:04X})".format(o=self)
+
+
+def to_bytes(value):
+    if isinstance(value, str):
+        return list(bytearray.fromhex(value))
+    elif isinstance(value, collections.Iterable):
+        value = list(value)
+        for b in value:
+            if not isinstance(b, int) or not (0 <= b < 256):
+                raise ValueError("each array element must represent a byte")
+        return value
+    else:
+        raise ValueError("value must be a hex string or bytes collections")
+
+
+class AckReply(Reply):
+    def __init__(self, epc="", pc=0x0000, crc=0x0000):
+        super().__init__()
+        self._data = to_bytes(epc)
+        self.pc = pc
+        self.crc = crc
+
+    @property
+    def bitlen(self):
+        return 32 + len(self._data) * 8
+
+    @property
+    def epc(self):
+        return self._data
+
+    def get_epc_string(self, byte_separator=""):
+        return byte_separator.join("{:02X}".format(b) for b in self._data)
+
+    def __str__(self):
+        return "Reply{{PC(0x{o.pc:04X}),EPC({epc})," \
+               "CRC(0x{o.crc:04X})}}".format(
+                o=self, epc=self.get_epc_string())
+
+
+class ReqRnReply(Reply):
+    def __init__(self, rn=0x0000, crc=0x0000):
+        super().__init__()
+        self.rn = rn
+        self.crc = crc
+
+    @property
+    def bitlen(self):
+        return 32
+
+    def __str__(self):
+        return "Reply{{RN(0x{o.rn:04X}),CRC(0x{o.crc:04X})}}".format(o=self)
+
+
+class ReadReply(Reply):
+    def __init__(self, data="", rn=0x0000, crc=0x0000, header=False):
+        super().__init__()
+        self.rn = rn
+        self.crc = crc
+        self.header = header
+        self._data = to_bytes(data)
+
+    @property
+    def memory(self):
+        return self._data
+
+    def get_memory_string(self, byte_separator=""):
+        return byte_separator.join("{:02X}".format(b) for b in self._data)
+
+    @property
+    def bitlen(self):
+        return 33 + len(self.memory) * 8
+
+    def __str__(self):
+        return "Reply{{Header({header}),Memory({data}),RN(0x{o.rn:04X})," \
+               "CRC(0x{o.crc:04X})}}".format(
+                header=int(self.header), data=self.get_memory_string(), o=self)

@@ -133,12 +133,35 @@ class TestCommands(unittest.TestCase):
                             crc=0x0B)
         self.assertEqual(cmd2.encode(), '1000111111111011001011')
 
+    def test_query_command_str(self):
+        cmd = epcstd.Query(dr=epcstd.DivideRatio.DR_8,
+                           m=epcstd.TagEncoding.FM0, trext=False,
+                           sel=epcstd.SelFlag.ALL,
+                           session=epcstd.Session.S0,
+                           target=epcstd.InventoryFlag.A, q=13,
+                           crc=0x1F)
+        string = str(cmd)
+        self.assertIn(str(epcstd.CommandCode.QUERY), string)
+        self.assertIn(str(epcstd.DivideRatio.DR_8), string)
+        self.assertIn(str(epcstd.TagEncoding.FM0), string)
+        self.assertIn(str(epcstd.SelFlag.ALL), string)
+        self.assertIn(str(epcstd.Session.S0), string)
+        self.assertIn(str(epcstd.InventoryFlag.A), string)
+        self.assertIn("13", string)
+        self.assertIn("1F", string)
+
     def test_query_rep_command_encoding(self):
         cmd1 = epcstd.QueryRep(session=epcstd.Session.S0)
         self.assertEqual(cmd1.encode(), '0000')
         self.assertEqual(cmd1.bitlen, 4)
         cmd2 = epcstd.QueryRep(session=epcstd.Session.S3)
         self.assertEqual(cmd2.encode(), '0011')
+
+    def test_query_rep_command_str(self):
+        cmd = epcstd.QueryRep(session=epcstd.Session.S1)
+        string = str(cmd)
+        self.assertIn(str(epcstd.CommandCode.QUERY_REP), string)
+        self.assertIn(str(epcstd.Session.S1), string)
 
     def test_ack_command_encoding(self):
         cmd1 = epcstd.Ack(rn=0x0000)
@@ -147,21 +170,57 @@ class TestCommands(unittest.TestCase):
         cmd2 = epcstd.Ack(rn=0xFFFF)
         self.assertEqual(cmd2.encode(), '011111111111111111')
 
+    def test_ack_command_str(self):
+        cmd = epcstd.Ack(rn=0xAB)
+        string = str(cmd)
+        self.assertIn(str(epcstd.CommandCode.ACK), string)
+        self.assertIn('0x00AB', string)
+
     def test_req_rn_command_encoding(self):
         cmd1 = epcstd.ReqRN(rn=0x0000, crc=0x0000)
+        cmd2 = epcstd.ReqRN(rn=0xAAAA, crc=0x5555)
         self.assertEqual(cmd1.encode(),
                          '1100000100000000000000000000000000000000')
         self.assertEqual(cmd1.bitlen, 40)
-        cmd2 = epcstd.ReqRN(rn=0xAAAA, crc=0x5555)
         self.assertEqual(cmd2.encode(),
                          '1100000110101010101010100101010101010101')
+
+    def test_req_rn_command_str(self):
+        cmd1 = epcstd.ReqRN(rn=0x1234, crc=0xABCD)
+        cmd2 = epcstd.ReqRN(rn=0xAABB, crc=0xCCDD)
+        string1 = str(cmd1)
+        string2 = str(cmd2)
+        self.assertIn('0x1234', string1)
+        self.assertIn('0xABCD', string1)
+        self.assertIn('0xAABB', string2)
+        self.assertIn('0xCCDD', string2)
 
     def test_read_command_encoding(self):
         cmd1 = epcstd.Read(bank=epcstd.MemoryBank.RESERVED, word_ptr=0,
                            word_count=0, rn=0x0000, crc=0x0000)
-        self.assertEqual(cmd1.encode(), '11000010' + '0' * 50)
-        self.assertEqual(cmd1.bitlen, 58)
         cmd2 = epcstd.Read(bank=epcstd.MemoryBank.USER, word_ptr=0x80,
                            word_count=255, rn=0xAAAA, crc=0x5555)
+        self.assertEqual(cmd1.encode(), '11000010' + '0' * 50)
+        self.assertEqual(cmd1.bitlen, 58)
         self.assertEqual(cmd2.encode(), '11000010' + '11' + '1000000100000000'
                          + '1' * 8 + '1010' * 4 + '0101' * 4)
+
+    def test_read_command_str(self):
+        cmd1 = epcstd.Read(bank=epcstd.MemoryBank.EPC, word_ptr=2,
+                           word_count=5, rn=0xAABB, crc=0xCCDD)
+        cmd2 = epcstd.Read(bank=epcstd.MemoryBank.TID, word_ptr=3,
+                           word_count=1, rn=0xABCD, crc=0xEFEF)
+        string1 = str(cmd1)
+        string2 = str(cmd2)
+        self.assertIn('EPC', string1.upper())
+        self.assertIn('0x02', string1)
+        self.assertIn('5', string1)
+        self.assertIn('0xAABB', string1)
+        self.assertIn('0xCCDD', string1)
+        self.assertIn('TID', string2.upper())
+        self.assertIn('0x03', string2)
+        self.assertIn('1', string2)
+        self.assertIn('0xABCD', string2)
+        self.assertIn('0xEFEF', string2)
+
+

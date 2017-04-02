@@ -223,6 +223,11 @@ class Query(Command):
                 self.target.code + encode_int(self.q, 4) +
                 encode_int(self.crc, 5))
 
+    def __str__(self):
+        return "{o.code}{{DR({o.dr}),{o.m},TRext({trext}),{o.sel}," \
+               "{o.session},{o.target},Q({o.q}),CRC(0x{o.crc:02X})}}" \
+               "".format(o=self, trext=(1 if self.trext else 0))
+
 
 class QueryRep(Command):
     def __init__(self, session=Session.S0):
@@ -231,6 +236,9 @@ class QueryRep(Command):
 
     def encode(self):
         return self.code.code + self.session.code
+
+    def __str__(self):
+        return "{o.code}{{{o.session}}}".format(o=self)
 
 
 class Ack(Command):
@@ -241,6 +249,9 @@ class Ack(Command):
     def encode(self):
         return self.code.code + encode_int(self.rn, 16)
 
+    def __str__(self):
+        return "{o.code}{{0x{o.rn:04X}}}".format(o=self)
+
 
 class ReqRN(Command):
     def __init__(self, rn=0x0000, crc=0x0000):
@@ -250,6 +261,9 @@ class ReqRN(Command):
 
     def encode(self):
         return self.code.code + encode_word(self.rn) + encode_word(self.crc)
+
+    def __str__(self):
+        return "{o.code}{{RN(0x{o.rn:04X}),CRC(0x{o.crc:04X})}}".format(o=self)
 
 
 class Read(Command):
@@ -266,6 +280,11 @@ class Read(Command):
         return (self.code.code + self.bank.code + encode_ebv(self.word_ptr) +
                 encode_byte(self.word_count) + encode_word(self.rn) +
                 encode_word(self.crc))
+
+    def __str__(self):
+        return "{o.code}{{{o.bank},WordPtr(0x{o.word_ptr:02X})," \
+               "WordCount({o.word_count}),RN(0x{o.rn:04X})," \
+               "CRC(0x{o.crc:04X})}}".format(o=self)
 
 
 #

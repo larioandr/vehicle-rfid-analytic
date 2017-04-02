@@ -306,3 +306,86 @@ class TestReplies(unittest.TestCase):
         self.assertIn('AABBCC', s2.upper())
         self.assertIn('4321', s2)
         self.assertIn('DCBA', s2.upper())
+
+
+class TestReaderPreambles(unittest.TestCase):
+    def test_reader_preamble_durations(self):
+        p = epcstd.ReaderPreamble(tari=6.25e-6, rtcal=18.75e-6, trcal=56.25e-6)
+        self.assertAlmostEqual(p.data0, p.tari, 9)
+        self.assertAlmostEqual(p.delim, 12.5e-6, 9)
+        self.assertAlmostEqual(p.data0, 6.25e-6, 9)
+        self.assertAlmostEqual(p.data1, 12.5e-6, 9)
+        self.assertAlmostEqual(p.rtcal, 18.75e-6, 9)
+        self.assertAlmostEqual(p.trcal, 56.25e-6, 9)
+        self.assertAlmostEqual(p.duration, 93.75e-6, 9)
+
+    def test_reader_preamble_str(self):
+        p = epcstd.ReaderPreamble(tari=12.5e-6, rtcal=33.45e-6, trcal=60.15e-6,
+                                  delim=13.0e-6)
+        s = str(p)
+        self.assertIn("12.5", s)
+        self.assertIn("33.45", s)
+        self.assertIn("60.15", s)
+        self.assertIn("13.0", s)
+
+    def test_reader_sync_durations(self):
+        sync = epcstd.ReaderSync(tari=12.5e-6, rtcal=31.25e-6, delim=13.0e-6)
+        self.assertAlmostEqual(sync.tari, sync.data0, 9)
+        self.assertAlmostEqual(sync.data0, 12.5e-6, 9)
+        self.assertAlmostEqual(sync.data1, 18.75e-6, 9)
+        self.assertAlmostEqual(sync.rtcal, 31.25e-6, 9)
+        self.assertAlmostEqual(sync.delim, 13.0e-6)
+        self.assertAlmostEqual(sync.duration, 56.75e-6, 9)
+
+    def test_reader_sync_str(self):
+        sync = epcstd.ReaderSync(tari=25e-6, rtcal=75e-6, delim=12.0e-6)
+        s = str(sync)
+        self.assertIn("12.0", s)
+        self.assertIn("25.0", s)
+        self.assertIn("75.0", s)
+
+
+class TestTagPreamble(unittest.TestCase):
+    def test_tag_FM0_preamble_bitlen_and_duration(self):
+        short_preamble = epcstd.FM0Preamble(extended=False)
+        long_preamble = epcstd.FM0Preamble(extended=True)
+        self.assertEqual(short_preamble.bitlen, 6)
+        self.assertEqual(long_preamble.bitlen, 18)
+        self.assertAlmostEqual(short_preamble.get_duration(blf=320e3),
+                               1.875e-5)
+        self.assertAlmostEqual(long_preamble.get_duration(blf=320e3),
+                               5.625e-5)
+        self.assertAlmostEqual(short_preamble.get_duration(blf=40e3), 15e-5)
+        self.assertAlmostEqual(long_preamble.get_duration(blf=40e3), 45e-5)
+
+    def test_tag_miller_preamble_bitlen_and_duration(self):
+        m2_short = epcstd.MillerPreamble(m=2, extended=False)
+        m2_long = epcstd.MillerPreamble(m=2, extended=True)
+        m4_short = epcstd.MillerPreamble(m=4)
+        m8_long = epcstd.MillerPreamble(m=8, extended=True)
+        self.assertEqual(m2_short.bitlen, 10)
+        self.assertEqual(m2_long.bitlen, 22)
+        self.assertEqual(m4_short.bitlen, 10)
+        self.assertEqual(m8_long.bitlen, 22)
+        self.assertAlmostEqual(m2_short.get_duration(blf=320e3), 6.25e-5)
+        self.assertAlmostEqual(m2_long.get_duration(blf=320e3), 13.75e-5)
+        self.assertAlmostEqual(m4_short.get_duration(blf=320e3), 12.5e-5)
+        self.assertAlmostEqual(m8_long.get_duration(blf=320e3), 55e-5)
+        self.assertAlmostEqual(m2_short.get_duration(blf=64e3), 31.25e-5)
+
+    def test_tag_preamble_factory(self):
+        fm0_preamble = epcstd.create_tag_preamble(epcstd.TagEncoding.FM0)
+        fm0_extended_preamble = epcstd.create_tag_preamble(
+            epcstd.TagEncoding.FM0, True)
+        m2_preamble = epcstd.create_tag_preamble(epcstd.TagEncoding.M2)
+        m4_preamble = epcstd.create_tag_preamble(epcstd.TagEncoding.M2)
+        m8_preamble = epcstd.create_tag_preamble(epcstd.TagEncoding.M2)
+
+        self.assertIsInstance(fm0_preamble, epcstd.FM0Preamble)
+        self.assertIsInstance(fm0_extended_preamble, epcstd.FM0Preamble)
+        self.assertIsInstance(m2_preamble, epcstd.MillerPreamble)
+        self.assertIsInstance(m4_preamble, epcstd.MillerPreamble)
+        self.assertIsInstance(m8_preamble, epcstd.MillerPreamble)
+        self.assertEqual(fm0_preamble.bitlen, 6)
+        self.assertEqual(fm0_extended_preamble.bitlen, 18)
+

@@ -75,6 +75,19 @@ class TagEncoding(Enum):
     def __str__(self):
         return self._string
 
+    @staticmethod
+    def get(m):
+        if m == 1:
+            return TagEncoding.FM0
+        elif m == 2:
+            return TagEncoding.M2
+        elif m == 4:
+            return TagEncoding.M4
+        elif m == 8:
+            return TagEncoding.M8
+        else:
+            raise ValueError("m must be 1,2,4 or 8, but {} found".format(m))
+
 
 class InventoryFlag(Enum):
     A = ('0', "A")
@@ -290,12 +303,6 @@ class Read(Command):
 
 #
 #######################################################################
-# Reader frames
-#######################################################################
-#
-
-#
-#######################################################################
 # Tag replies
 #######################################################################
 #
@@ -395,3 +402,110 @@ class ReadReply(Reply):
         return "Reply{{Header({header}),Memory({data}),RN(0x{o.rn:04X})," \
                "CRC(0x{o.crc:04X})}}".format(
                 header=int(self.header), data=self.get_memory_string(), o=self)
+
+
+#
+#######################################################################
+# Frames
+#######################################################################
+#
+class ReaderSync:
+    DELIM = 12.5e-6
+
+    def __init__(self, tari, rtcal, delim=DELIM):
+        super().__init__()
+        self.tari = tari
+        self.rtcal = rtcal
+        self.delim = delim
+
+    @property
+    def data0(self): return self.tari
+
+    @property
+    def data1(self): return self.rtcal - self.tari
+
+    @property
+    def duration(self): return self.delim + self.tari + self.rtcal
+
+    def __str__(self):
+        return "Sync{{(Delim({}us),Tari({}us),RTcal({}us)}}".format(
+            self.delim * 1e6, self.tari * 1e6, self.rtcal * 1e6)
+
+
+class ReaderPreamble(ReaderSync):
+    def __init__(self, tari, rtcal, trcal, delim=ReaderSync.DELIM):
+        super().__init__(tari=tari, rtcal=rtcal, delim=delim)
+        self.trcal = trcal
+
+    @property
+    def duration(self): return super().duration + self.trcal
+
+    def __str__(self):
+        return "Preamble{{Delim({}us),Tari({}us),RTcal({}us)," \
+               "TRcal({}us)}}".format(self.delim * 1e6, self.tari * 1e6,
+                                      self.rtcal * 1e6, self.trcal * 1e6)
+
+
+class TagPreamble:
+    def __init__(self, extended=False):
+        super().__init__()
+        self.extended = extended
+
+    @property
+    def bitlen(self):
+        raise NotImplementedError
+
+    @property
+    def encoding(self):
+        raise NotImplementedError
+
+    def get_duration(self, blf):
+        return (self.bitlen * self.encoding.symbols_per_bit) / blf
+
+
+class FM0Preamble(TagPreamble):
+    def __init__(self, extended=False):
+        super().__init__(extended)
+
+    @property
+    def bitlen(self):
+        return 18 if self.extended else 6
+
+    @property
+    def encoding(self):
+        return TagEncoding.FM0
+
+
+class MillerPreamble(TagPreamble):
+    def __init__(self, m, extended=False):
+        super().__init__(extended)
+        self._encoding = MillerPreamble._get_and_validate_encoding(m)
+
+    @property
+    def m(self):
+        return self._encoding.symbols_per_bit
+
+    @m.setter
+    def m(self, value):
+        self._encoding = MillerPreamble._get_and_validate_encoding(value)
+
+    @property
+    def bitlen(self):
+        return 22 if self.extended else 10
+
+    @property
+    def encoding(self): return self._encoding
+
+    @staticmethod
+    def _get_and_validate_encoding(m):
+        enc = TagEncoding.get(m)
+        if enc not in [TagEncoding.M2, TagEncoding.M4, TagEncoding.M8]:
+            raise ValueError("Miller encodings supported are M2, M4, M8")
+        return enc
+
+
+def create_tag_preamble(encoding, extended=False):
+    if encoding == TagEncoding.FM0:
+        return FM0Preamble(extended)
+    else:
+        return MillerPreamble(m=encoding.symbols_per_bit, extended=extended)

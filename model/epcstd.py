@@ -428,7 +428,7 @@ class ReaderSync:
     def duration(self): return self.delim + self.tari + self.rtcal
 
     def __str__(self):
-        return "Sync{{(Delim({}us),Tari({}us),RTcal({}us)}}".format(
+        return "{{(Delim({}us),Tari({}us),RTcal({}us)}}".format(
             self.delim * 1e6, self.tari * 1e6, self.rtcal * 1e6)
 
 
@@ -441,7 +441,7 @@ class ReaderPreamble(ReaderSync):
     def duration(self): return super().duration + self.trcal
 
     def __str__(self):
-        return "Preamble{{Delim({}us),Tari({}us),RTcal({}us)," \
+        return "{{Delim({}us),Tari({}us),RTcal({}us)," \
                "TRcal({}us)}}".format(self.delim * 1e6, self.tari * 1e6,
                                       self.rtcal * 1e6, self.trcal * 1e6)
 
@@ -475,6 +475,11 @@ class FM0Preamble(TagPreamble):
     def encoding(self):
         return TagEncoding.FM0
 
+    def __str__(self):
+        return "{{({}){},{},trext({})}}".format(
+            self.bitlen, "0..01010v1" if self.extended else "1010v1",
+            self.encoding, 1 if self.extended else 0)
+
 
 class MillerPreamble(TagPreamble):
     def __init__(self, m, extended=False):
@@ -502,6 +507,11 @@ class MillerPreamble(TagPreamble):
         if enc not in [TagEncoding.M2, TagEncoding.M4, TagEncoding.M8]:
             raise ValueError("Miller encodings supported are M2, M4, M8")
         return enc
+
+    def __str__(self):
+        return "{{({}){},{},trext({})}}".format(
+            self.bitlen, "DD..DD010111" if self.extended else "DDDD010111",
+            self.encoding, 1 if self.extended else 0)
 
 
 def create_tag_preamble(encoding, extended=False):

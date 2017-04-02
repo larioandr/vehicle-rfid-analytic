@@ -389,3 +389,10 @@ class TestTagPreamble(unittest.TestCase):
         self.assertEqual(fm0_preamble.bitlen, 6)
         self.assertEqual(fm0_extended_preamble.bitlen, 18)
 
+    def test_tag_preamble_has_str(self):
+        s1 = str(epcstd.FM0Preamble(True))
+        s2 = str(epcstd.MillerPreamble(2, True))
+        self.assertNotIn("0x", s1)
+        self.assertNotIn("0x", s2)
+
+

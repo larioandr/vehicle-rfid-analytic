@@ -406,7 +406,7 @@ class ReadReply(Reply):
 
 #
 #######################################################################
-# Frames
+# Preambles and frames
 #######################################################################
 #
 class ReaderSync:
@@ -519,3 +519,45 @@ def create_tag_preamble(encoding, extended=False):
         return FM0Preamble(extended)
     else:
         return MillerPreamble(m=encoding.symbols_per_bit, extended=extended)
+
+
+class ReaderFrame:
+    def __init__(self, preamble, command):
+        super().__init__()
+        self.preamble = preamble
+        self.command = command
+
+    @property
+    def body_duration(self):
+        n_bits = {'0': 0, '1': 0}
+        for b in self.command.encode():
+            n_bits[b] += 1
+        d0 = self.preamble.data0
+        d1 = self.preamble.data1
+        return n_bits['0'] * d0 + n_bits['1'] * d1
+
+    @property
+    def preamble_duration(self):
+        return self.preamble.duration
+
+    @property
+    def duration(self):
+        return self.body_duration + self.preamble.duration
+
+
+class TagFrame:
+    def __init__(self, preamble, reply):
+        super().__init__()
+        self.preamble = preamble
+        self.reply = reply
+
+    def get_body_duration(self, blf):
+        m = self.preamble.encoding.symbols_per_bit
+        return (self.reply.bitlen * m) / blf
+
+    def get_duration(self, blf):
+        m = self.preamble.encoding.symbols_per_bit
+        t_preamble = self.preamble.get_duration(blf)
+        t_body = self.get_body_duration(blf)
+        t_suffix = m / blf
+        return t_preamble + t_body + t_suffix

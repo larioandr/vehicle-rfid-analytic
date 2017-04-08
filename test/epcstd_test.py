@@ -345,7 +345,7 @@ class TestReaderPreambles(unittest.TestCase):
         self.assertIn("75.0", s)
 
 
-class TestTagPreamble(unittest.TestCase):
+class TestTagPreambles(unittest.TestCase):
     def test_tag_FM0_preamble_bitlen_and_duration(self):
         short_preamble = epcstd.FM0Preamble(extended=False)
         long_preamble = epcstd.FM0Preamble(extended=True)
@@ -396,3 +396,95 @@ class TestTagPreamble(unittest.TestCase):
         self.assertNotIn("0x", s2)
 
 
+class TestReaderFrames(unittest.TestCase):
+    def setUp(self):
+        # The following query will be encoded as 1000011011010001101010
+        # number of 1s: 10, number of 0s: 12
+        self.query = epcstd.Query(
+            dr=epcstd.DivideRatio.DR_8, m=epcstd.TagEncoding.M8, trext=False,
+            sel=epcstd.SelFlag.SEL, session=epcstd.Session.S1,
+            target=epcstd.InventoryFlag.A, q=3, crc=0xAA)
+
+        # The following QueryRep will be encoded as 0011
+        self.query_rep = epcstd.QueryRep(session=epcstd.Session.S3)
+
+        # Now we define a fast preamble, a slow preamble and a SYNC:
+        self.fast_preamble = epcstd.ReaderPreamble(
+            tari=6.25e-6, rtcal=18.75e-6, trcal=56.25e-6)
+        self.slow_preamble = epcstd.ReaderPreamble(
+            tari=25e-6, rtcal=75e-6, trcal=225e-6)
+        self.fast_sync = epcstd.ReaderSync(tari=12.5e-6, rtcal=31.25e-6)
+        self.slow_sync = epcstd.ReaderSync(tari=25e-6, rtcal=62.5e-6)
+
+    def test_query_frame_fast_preamble_duration(self):
+        f = epcstd.ReaderFrame(preamble=self.fast_preamble, command=self.query)
+        self.assertAlmostEqual(f.duration, 293.75e-6, 9)
+        self.assertAlmostEqual(f.body_duration, 200e-6, 9)
+
+    def test_query_frame_slow_preamble_duration(self):
+        f = epcstd.ReaderFrame(preamble=self.slow_preamble, command=self.query)
+        self.assertAlmostEqual(f.duration, 1137.5e-6, 9)
+        self.assertAlmostEqual(f.body_duration, 800.0e-6, 9)
+
+    def test_query_rep_frame_fast_sync_duration(self):
+        f = epcstd.ReaderFrame(preamble=self.fast_sync, command=self.query_rep)
+        self.assertAlmostEqual(f.body_duration, 62.5e-6, 9)
+        self.assertAlmostEqual(f.duration, 118.75e-6, 9)
+
+    def test_query_rep_frame_slow_sync_duration(self):
+        f = epcstd.ReaderFrame(preamble=self.slow_sync, command=self.query_rep)
+        self.assertAlmostEqual(f.body_duration, 125e-6, 9)
+        self.assertAlmostEqual(f.duration, 225e-6, 9)
+
+
+class TestTagFrames(unittest.TestCase):
+    def setUp(self):
+        self.ack_reply = epcstd.AckReply(epc="ABCDEF01", pc=0, crc=0)
+        self.rn16_reply = epcstd.QueryReply(rn=0)
+        self.slow_blf = 120e3
+        self.fast_blf = 640e3
+
+    def test_tag_fm0_frame_duration(self):
+        pn = epcstd.create_tag_preamble(epcstd.TagEncoding.FM0, extended=False)
+        pe = epcstd.create_tag_preamble(epcstd.TagEncoding.FM0, extended=True)
+
+        ne_ack_frame = epcstd.TagFrame(preamble=pn, reply=self.ack_reply)
+        ex_ack_frame = epcstd.TagFrame(preamble=pe, reply=self.ack_reply)
+        ex_rn16_frame = epcstd.TagFrame(preamble=pe, reply=self.rn16_reply)
+
+        self.assertAlmostEqual(ne_ack_frame.get_body_duration(self.slow_blf),
+                               0.00053333333, 8)
+        self.assertAlmostEqual(ne_ack_frame.get_duration(self.slow_blf),
+                               0.00059166667, 8)
+        self.assertAlmostEqual(ex_ack_frame.get_body_duration(self.slow_blf),
+                               0.00053333333, 8)
+        self.assertAlmostEqual(ex_ack_frame.get_duration(self.slow_blf),
+                               0.00069166667, 8)
+        self.assertAlmostEqual(ex_rn16_frame.get_body_duration(self.slow_blf),
+                               0.00013333333, 8)
+        self.assertAlmostEqual(ex_rn16_frame.get_duration(self.slow_blf),
+                               0.00029166667, 8)
+        self.assertAlmostEqual(ex_rn16_frame.get_body_duration(self.fast_blf),
+                               2.5e-05, 8)
+        self.assertAlmostEqual(ex_rn16_frame.get_duration(self.fast_blf),
+                               5.46875e-05)
+
+    def test_tag_m2_frame_duration(self):
+        preamble = epcstd.create_tag_preamble(epcstd.TagEncoding.M2, False)
+        ext_preamble = epcstd.create_tag_preamble(epcstd.TagEncoding.M2, True)
+
+        frame = epcstd.TagFrame(preamble, self.rn16_reply)
+        ext_frame = epcstd.TagFrame(ext_preamble, self.rn16_reply)
+
+        self.assertAlmostEqual(frame.get_body_duration(self.slow_blf),
+                               0.0002666666666666667, 8)
+        self.assertAlmostEqual(frame.get_duration(self.slow_blf),
+                               0.00045, 8)
+        self.assertAlmostEqual(frame.get_body_duration(self.fast_blf),
+                               5e-05, 8)
+        self.assertAlmostEqual(frame.get_duration(self.fast_blf),
+                               8.4375e-05, 8)
+        self.assertAlmostEqual(ext_frame.get_body_duration(self.slow_blf),
+                               frame.get_body_duration(self.slow_blf), 8)
+        self.assertAlmostEqual(ext_frame.get_duration(self.slow_blf),
+                               0.00065, 8)

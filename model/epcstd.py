@@ -529,8 +529,10 @@ class ReaderFrame:
 
     @property
     def body_duration(self):
+        encoded_string = (self.command if isinstance(self.command, str)
+                          else self.command.encode())
         n_bits = {'0': 0, '1': 0}
-        for b in self.command.encode():
+        for b in encoded_string:
             n_bits[b] += 1
         d0 = self.preamble.data0
         d1 = self.preamble.data1
@@ -561,3 +563,37 @@ class TagFrame:
         t_body = self.get_body_duration(blf)
         t_suffix = m / blf
         return t_preamble + t_body + t_suffix
+
+
+#
+#######################################################################
+# Reader and Tag frames helpers and accessors
+#######################################################################
+#
+class ReaderParams:
+    tari = 6.25e-6
+    rtcal = 1.5625e-05
+    trcal = 3.125e-05
+    delim = ReaderSync.DELIM
+
+
+readerParams = ReaderParams()
+
+
+def get_reader_frame_duration(command, tari=None, rtcal=None, trcal=None,
+                              delim=None):
+    tari = tari if tari is not None else readerParams.tari
+    rtcal = rtcal if rtcal is not None else readerParams.rtcal
+    trcal = trcal if trcal is not None else readerParams.trcal
+    delim = delim if delim is not None else readerParams.delim
+
+    if isinstance(command, Query) or (
+                isinstance(command, str) and
+                command.startswith(CommandCode.QUERY.code)):
+        preamble = ReaderPreamble(tari, rtcal, trcal, delim)
+    else:
+        preamble = ReaderSync(tari=tari, rtcal=rtcal, delim=delim)
+    frame = ReaderFrame(preamble, command)
+    return frame.duration
+
+

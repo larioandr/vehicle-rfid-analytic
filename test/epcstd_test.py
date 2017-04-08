@@ -150,6 +150,48 @@ class TestCommands(unittest.TestCase):
         self.assertIn("13", string)
         self.assertIn("1F", string)
 
+    def test_query_command_using_reader_params(self):
+        #
+        # 1) Setting some initial values for Query fields in readerParams
+        #    and making sure they are passed to Query as default values
+        #
+        epcstd.readerParams.divide_ratio = epcstd.DivideRatio.DR_8
+        epcstd.readerParams.tag_encoding = epcstd.TagEncoding.FM0
+        epcstd.readerParams.sel = epcstd.SelFlag.SEL
+        epcstd.readerParams.session = epcstd.Session.S0
+        epcstd.readerParams.target = epcstd.InventoryFlag.A
+        epcstd.readerParams.Q = 3
+        epcstd.readerParams.trext = False
+
+        query1 = epcstd.Query()
+
+        def assert_query_params(query):
+            self.assertEqual(query.dr, epcstd.readerParams.divide_ratio)
+            self.assertEqual(query.m, epcstd.readerParams.tag_encoding)
+            self.assertEqual(query.sel, epcstd.readerParams.sel)
+            self.assertEqual(query.session, epcstd.readerParams.session)
+            self.assertEqual(query.target, epcstd.readerParams.target)
+            self.assertEqual(query.q, epcstd.readerParams.Q)
+            self.assertEqual(query.trext, epcstd.readerParams.trext)
+
+        assert_query_params(query1)
+
+        #
+        # 2) Altering values in readerParams and making sure they are
+        #    passed to Query
+        #
+        epcstd.readerParams.divide_ratio = epcstd.DivideRatio.DR_643
+        epcstd.readerParams.tag_encoding = epcstd.TagEncoding.M8
+        epcstd.readerParams.sel = epcstd.SelFlag.NOT_SEL
+        epcstd.readerParams.session = epcstd.Session.S3
+        epcstd.readerParams.target = epcstd.InventoryFlag.B
+        epcstd.readerParams.Q = 8
+        epcstd.readerParams.trext = True
+
+        query2 = epcstd.Query()
+
+        assert_query_params(query2)
+
     def test_query_rep_command_encoding(self):
         cmd1 = epcstd.QueryRep(session=epcstd.Session.S0)
         self.assertEqual(cmd1.encode(), '0000')
@@ -162,6 +204,22 @@ class TestCommands(unittest.TestCase):
         string = str(cmd)
         self.assertIn(str(epcstd.CommandCode.QUERY_REP), string)
         self.assertIn(str(epcstd.Session.S1), string)
+
+    def test_query_rep_using_reader_params(self):
+        def assert_fields_match_reader_params(query_rep):
+            self.assertEqual(query_rep.session, epcstd.readerParams.session)
+
+        # 1) Setting readerParams and checking they were passed to the
+        #    command as the default params
+        epcstd.readerParams.session = epcstd.Session.S0
+        query_rep_1 = epcstd.QueryRep()
+        assert_fields_match_reader_params(query_rep_1)
+
+        # 2) Changing readerParams and checking the changed
+        #    values were passed to new command as the default params
+        epcstd.readerParams.session = epcstd.Session.S3
+        query_rep_2 = epcstd.QueryRep()
+        assert_fields_match_reader_params(query_rep_2)
 
     def test_ack_command_encoding(self):
         cmd1 = epcstd.Ack(rn=0x0000)
@@ -204,6 +262,31 @@ class TestCommands(unittest.TestCase):
         self.assertEqual(cmd1.bitlen, 58)
         self.assertEqual(cmd2.encode(), '11000010' + '11' + '1000000100000000'
                          + '1' * 8 + '1010' * 4 + '0101' * 4)
+
+    def test_read_using_reader_params(self):
+        def assert_fields_match_reader_params(cmd):
+            assert isinstance(cmd, epcstd.Read)
+            self.assertEqual(cmd.bank, epcstd.readerParams.read_default_bank)
+            self.assertEqual(cmd.word_ptr,
+                             epcstd.readerParams.read_default_word_ptr)
+            self.assertEqual(cmd.word_count,
+                             epcstd.readerParams.read_default_word_count)
+
+        # 1) Setting readerParams and checking they were passed to the
+        #    command as the default params
+        epcstd.readerParams.read_default_bank = epcstd.MemoryBank.EPC
+        epcstd.readerParams.read_default_word_ptr = 0
+        epcstd.readerParams.read_default_word_count = 10
+        cmd1 = epcstd.Read()
+        assert_fields_match_reader_params(cmd1)
+
+        # 2) Changing readerParams and checking the changed
+        #    values were passed to new command as the default params
+        epcstd.readerParams.read_default_bank = epcstd.MemoryBank.TID
+        epcstd.readerParams.read_default_word_ptr = 5
+        epcstd.readerParams.read_default_word_count = 23
+        cmd2 = epcstd.Read()
+        assert_fields_match_reader_params(cmd2)
 
     def test_read_command_str(self):
         cmd1 = epcstd.Read(bank=epcstd.MemoryBank.EPC, word_ptr=2,

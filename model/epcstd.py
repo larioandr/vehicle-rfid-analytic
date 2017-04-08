@@ -165,6 +165,31 @@ class CommandCode(Enum):
 
 #
 #######################################################################
+# Default system-wide Reader Parameters
+#######################################################################
+#
+class ReaderParams:
+    tari = 6.25e-6
+    rtcal = 1.5625e-05
+    trcal = 3.125e-05
+    delim = 12.5e-6
+    Q = 4
+    divide_ratio = DivideRatio.DR_8
+    tag_encoding = TagEncoding.FM0
+    sel = SelFlag.ALL
+    session = Session.S0
+    target = InventoryFlag.A
+    trext = False
+    read_default_bank = MemoryBank.TID
+    read_default_word_ptr = 0
+    read_default_word_count = 4  # FIXME: check this!
+
+
+readerParams = ReaderParams()
+
+
+#
+#######################################################################
 # API for encoding basic types
 #######################################################################
 #
@@ -218,17 +243,16 @@ class Command:
 
 
 class Query(Command):
-    def __init__(self, dr=DivideRatio.DR_8, m=TagEncoding.FM0, trext=False,
-                 sel=SelFlag.ALL, session=Session.S0, target=InventoryFlag.A,
-                 q=0, crc=0x00):
+    def __init__(self, dr=None, m=None, trext=None, sel=None, session=None,
+                 target=None, q=None, crc=0x00):
         super().__init__(CommandCode.QUERY)
-        self.dr = dr
-        self.m = m
-        self.trext = trext
-        self.sel = sel
-        self.session = session
-        self.target = target
-        self.q = q
+        self.dr = dr if dr is not None else readerParams.divide_ratio
+        self.m = m if m is not None else readerParams.tag_encoding
+        self.trext = trext if trext is not None else readerParams.trext
+        self.sel = sel if sel is not None else readerParams.sel
+        self.session = session if session is not None else readerParams.session
+        self.target = target if target is not None else readerParams.target
+        self.q = q if q is not None else readerParams.Q
         self.crc = crc
 
     def encode(self):
@@ -244,9 +268,9 @@ class Query(Command):
 
 
 class QueryRep(Command):
-    def __init__(self, session=Session.S0):
+    def __init__(self, session=None):
         super().__init__(CommandCode.QUERY_REP)
-        self.session = session
+        self.session = session if session is not None else readerParams.session
 
     def encode(self):
         return self.code.code + self.session.code
@@ -281,12 +305,15 @@ class ReqRN(Command):
 
 
 class Read(Command):
-    def __init__(self, bank=MemoryBank.RESERVED, word_ptr=0, word_count=0,
+    def __init__(self, bank=None, word_ptr=None, word_count=None,
                  rn=0x0000, crc=0x0000):
         super().__init__(CommandCode.READ)
-        self.bank = bank
-        self.word_ptr = word_ptr
-        self.word_count = word_count
+        self.bank = (bank if bank is not None
+                     else readerParams.read_default_bank)
+        self.word_ptr = (word_ptr if word_ptr is not None
+                         else readerParams.read_default_word_ptr)
+        self.word_count = (word_count if word_count is not None
+                           else readerParams.read_default_word_count)
         self.rn = rn
         self.crc = crc
 
@@ -570,15 +597,6 @@ class TagFrame:
 # Reader and Tag frames helpers and accessors
 #######################################################################
 #
-class ReaderParams:
-    tari = 6.25e-6
-    rtcal = 1.5625e-05
-    trcal = 3.125e-05
-    delim = ReaderSync.DELIM
-
-
-readerParams = ReaderParams()
-
 
 def get_reader_frame_duration(command, tari=None, rtcal=None, trcal=None,
                               delim=None):

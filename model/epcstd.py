@@ -622,11 +622,66 @@ def get_reader_frame_duration(command, tari=None, rtcal=None, trcal=None,
 
 
 def get_tag_frame_duration(reply, blf=None, encoding=None, trext=None):
-    blf = blf if blf is not None else (readerParams.divide_ratio.eval() /
-                                       readerParams.trcal)
+    blf = blf if blf is not None else get_blf()
     encoding = encoding if encoding is not None else readerParams.tag_encoding
     trext = trext if trext is not None else readerParams.trext
 
     preamble = create_tag_preamble(encoding, trext)
     frame = TagFrame(preamble, reply)
     return frame.get_duration(blf)
+
+
+#
+#######################################################################
+# Link timings estimation
+#######################################################################
+#
+def get_blf(dr=None, trcal=None):
+    dr = dr if dr is not None else readerParams.divide_ratio
+    trcal = trcal if trcal is not None else readerParams.trcal
+    return dr.eval() / trcal
+
+
+class TempRange(Enum):
+    NOMINAL = (False, "nominal")
+    EXTENDED = (True, "extended")
+
+    # noinspection PyInitNewSignature
+    def __init__(self, extended, s):
+        self._extended = extended
+        self._s = s
+
+    @property
+    def extended(self):
+        return self._extended
+
+    def __str__(self):
+        return self._s
+
+
+def get_frt(trcal, dr, temp_range):
+    if dr == DivideRatio.DR_8:
+        if temp_range == TempRange.EXTENDED:
+            f = [(33.633, 0.15), (66.033, 0.22), (82.467, 0.15),
+                 (84.133, 0.10), (131.967, 0.12), (198.00, 0.07),
+                 (227.25, 0.05)]
+        else:
+            f = [(33.633, 0.15), (66.033, 0.22), (67.367, 0.10),
+                 (82.467, 0.12), (131.967, 0.10), (198.00, 0.07),
+                 (227.25, 0.05)]
+    else:
+        if temp_range == TempRange.EXTENDED:
+            f = [(24.7500, 0.19), (30.9375, 0.15), (49.50, 0.10),
+                 (75.0000, 0.07), (202.0, 0.04)]
+        else:
+            f = [(24.75, 0.19), (25.25, 0.10), (30.9375, 0.12),
+                 (49.50, 0.10), (75.00, 0.07), (202.000, 0.04)]
+    for highest_trcal, frt in f:
+        if trcal < highest_trcal * 1e-6:
+            return frt
+    return f[-1][1]
+
+# def get_t_pri(blf=None):
+#     blf = blf if blf is not None else get_blf()
+#     return 1.0 / blf
+

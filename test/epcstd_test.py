@@ -1,4 +1,5 @@
 import unittest
+from random import uniform
 from model import epcstd
 
 
@@ -739,3 +740,69 @@ class TestTagFrameAccessors(unittest.TestCase):
                     self.assertAlmostEqual(
                         epcstd.get_tag_frame_duration(reply),
                         frame.get_duration(blf), 8, "frame = {}".format(frame))
+
+
+class TestFrequencyToleranceEstimator(unittest.TestCase):
+    NUM_RANDOM_CHECKS = 5
+
+    def assert_frt_node_values(self, node_values, dr, temp):
+        for trcal, frt in node_values:
+            self.assertAlmostEqual(
+                epcstd.get_frt(trcal*1e-6, dr, temp), frt, 8,
+                "trcal={} (table node)".format(trcal))
+
+    def assert_frt_interval_values(self, interval_values, dr, temp):
+        for lb, rb, frt in interval_values:
+            low_trcal = lb * 1.011 * 1e-6
+            top_trcal = rb * 0.989 * 1e-6
+            self.assertAlmostEqual(
+                epcstd.get_frt(low_trcal, dr, temp), frt, 8,
+                "trcal={} (interval left bound)".format(low_trcal))
+            self.assertAlmostEqual(
+                epcstd.get_frt(top_trcal, dr, temp), frt, 8,
+                "trcal={} (interval right bound)".format(top_trcal))
+            for i in range(TestFrequencyToleranceEstimator.NUM_RANDOM_CHECKS):
+                trcal = uniform(low_trcal, top_trcal)
+                self.assertAlmostEqual(
+                    epcstd.get_frt(trcal, dr, temp), frt, 8,
+                    "trcal={} (interval random internal point)".format(trcal))
+
+    def test_tolerance_for_dr8_nominal_temp(self):
+        node_values = [(33.3, 0.15), (66.7, 0.1), (83.3, 0.1)]
+        intervals = [(33.3, 66.7, 0.22), (66.7, 83.3, 0.12),
+                     (83.3, 133.3, 0.1), (133.3, 200.0, 0.07),
+                     (200.0, 225.0, 0.05)]
+        self.assert_frt_node_values(
+            node_values, epcstd.DivideRatio.DR_8, epcstd.TempRange.NOMINAL)
+        self.assert_frt_interval_values(
+            intervals, epcstd.DivideRatio.DR_8, epcstd.TempRange.NOMINAL)
+
+    def test_tolerance_for_dr8_extended_temp(self):
+        node_values = [(33.3, 0.15), (66.7, 0.15), (83.3, 0.1)]
+        intervals = [(33.3, 66.7, 0.22), (66.7, 83.3, 0.15),
+                     (83.3, 133.3, 0.12), (133.3, 200.0, 0.07),
+                     (200.0, 225.0, 0.05)]
+        self.assert_frt_node_values(
+            node_values, epcstd.DivideRatio.DR_8, epcstd.TempRange.EXTENDED)
+        self.assert_frt_interval_values(
+            intervals, epcstd.DivideRatio.DR_8, epcstd.TempRange.EXTENDED)
+
+    def test_tolerance_for_dr16_nominal_temp(self):
+        node_values = [(25.0, 0.10), (31.25, 0.10), (50.0, 0.07)]
+        intervals = [(17.2, 25.0, 0.19), (25.0, 31.25, 0.12),
+                     (31.25, 50.0, 0.10), (50.0, 75.0, 0.07),
+                     (75.0, 200.0, 0.04)]
+        self.assert_frt_node_values(
+            node_values, epcstd.DivideRatio.DR_643, epcstd.TempRange.NOMINAL)
+        self.assert_frt_interval_values(
+            intervals, epcstd.DivideRatio.DR_643, epcstd.TempRange.NOMINAL)
+
+    def test_tolerance_for_dr16_extended_temp(self):
+        node_values = [(25.0, 0.15), (31.25, 0.10), (50.0, 0.07)]
+        intervals = [(17.2, 25.0, 0.19), (25.0, 31.25, 0.15),
+                     (31.25, 50.0, 0.10), (50.0, 75.0, 0.07),
+                     (75.0, 200.0, 0.04)]
+        self.assert_frt_node_values(
+            node_values, epcstd.DivideRatio.DR_643, epcstd.TempRange.EXTENDED)
+        self.assert_frt_interval_values(
+            intervals, epcstd.DivideRatio.DR_643, epcstd.TempRange.EXTENDED)

@@ -767,42 +767,53 @@ class TestFrequencyToleranceEstimator(unittest.TestCase):
                     epcstd.get_frt(trcal, dr, temp), frt, 8,
                     "trcal={} (interval random internal point)".format(trcal))
 
-    def test_tolerance_for_dr8_nominal_temp(self):
+    def test_tolerance_for_dr643_nominal_temp(self):
         node_values = [(33.3, 0.15), (66.7, 0.1), (83.3, 0.1)]
         intervals = [(33.3, 66.7, 0.22), (66.7, 83.3, 0.12),
                      (83.3, 133.3, 0.1), (133.3, 200.0, 0.07),
                      (200.0, 225.0, 0.05)]
+        self.assert_frt_node_values(
+            node_values, epcstd.DivideRatio.DR_643, epcstd.TempRange.NOMINAL)
+        self.assert_frt_interval_values(
+            intervals, epcstd.DivideRatio.DR_643, epcstd.TempRange.NOMINAL)
+
+    def test_tolerance_for_dr643_extended_temp(self):
+        node_values = [(33.3, 0.15), (66.7, 0.15), (83.3, 0.1)]
+        intervals = [(33.3, 66.7, 0.22), (66.7, 83.3, 0.15),
+                     (83.3, 133.3, 0.12), (133.3, 200.0, 0.07),
+                     (200.0, 225.0, 0.05)]
+        self.assert_frt_node_values(
+            node_values, epcstd.DivideRatio.DR_643, epcstd.TempRange.EXTENDED)
+        self.assert_frt_interval_values(
+            intervals, epcstd.DivideRatio.DR_643, epcstd.TempRange.EXTENDED)
+
+    def test_tolerance_for_dr8_nominal_temp(self):
+        node_values = [(25.0, 0.10), (31.25, 0.10), (50.0, 0.07)]
+        intervals = [(17.2, 25.0, 0.19), (25.0, 31.25, 0.12),
+                     (31.25, 50.0, 0.10), (50.0, 75.0, 0.07),
+                     (75.0, 200.0, 0.04)]
         self.assert_frt_node_values(
             node_values, epcstd.DivideRatio.DR_8, epcstd.TempRange.NOMINAL)
         self.assert_frt_interval_values(
             intervals, epcstd.DivideRatio.DR_8, epcstd.TempRange.NOMINAL)
 
     def test_tolerance_for_dr8_extended_temp(self):
-        node_values = [(33.3, 0.15), (66.7, 0.15), (83.3, 0.1)]
-        intervals = [(33.3, 66.7, 0.22), (66.7, 83.3, 0.15),
-                     (83.3, 133.3, 0.12), (133.3, 200.0, 0.07),
-                     (200.0, 225.0, 0.05)]
-        self.assert_frt_node_values(
-            node_values, epcstd.DivideRatio.DR_8, epcstd.TempRange.EXTENDED)
-        self.assert_frt_interval_values(
-            intervals, epcstd.DivideRatio.DR_8, epcstd.TempRange.EXTENDED)
-
-    def test_tolerance_for_dr16_nominal_temp(self):
-        node_values = [(25.0, 0.10), (31.25, 0.10), (50.0, 0.07)]
-        intervals = [(17.2, 25.0, 0.19), (25.0, 31.25, 0.12),
-                     (31.25, 50.0, 0.10), (50.0, 75.0, 0.07),
-                     (75.0, 200.0, 0.04)]
-        self.assert_frt_node_values(
-            node_values, epcstd.DivideRatio.DR_643, epcstd.TempRange.NOMINAL)
-        self.assert_frt_interval_values(
-            intervals, epcstd.DivideRatio.DR_643, epcstd.TempRange.NOMINAL)
-
-    def test_tolerance_for_dr16_extended_temp(self):
         node_values = [(25.0, 0.15), (31.25, 0.10), (50.0, 0.07)]
         intervals = [(17.2, 25.0, 0.19), (25.0, 31.25, 0.15),
                      (31.25, 50.0, 0.10), (50.0, 75.0, 0.07),
                      (75.0, 200.0, 0.04)]
         self.assert_frt_node_values(
-            node_values, epcstd.DivideRatio.DR_643, epcstd.TempRange.EXTENDED)
+            node_values, epcstd.DivideRatio.DR_8, epcstd.TempRange.EXTENDED)
         self.assert_frt_interval_values(
-            intervals, epcstd.DivideRatio.DR_643, epcstd.TempRange.EXTENDED)
+            intervals, epcstd.DivideRatio.DR_8, epcstd.TempRange.EXTENDED)
+
+    def test_get_frt_uses_readerParams(self):
+        epcstd.readerParams.temp_range = epcstd.TempRange.NOMINAL
+        epcstd.readerParams.divide_ratio = epcstd.DivideRatio.DR_8
+        epcstd.readerParams.trcal = 31.25e-6
+        self.assertAlmostEqual(epcstd.get_frt(), 0.10, 3)
+
+        epcstd.readerParams.temp_range = epcstd.TempRange.EXTENDED
+        epcstd.readerParams.divide_ratio = epcstd.DivideRatio.DR_643
+        epcstd.readerParams.trcal = 66.7e-6
+        self.assertAlmostEqual(epcstd.get_frt(), 0.15, 3)

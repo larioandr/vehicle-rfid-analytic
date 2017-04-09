@@ -163,6 +163,23 @@ class CommandCode(Enum):
         return self._string
 
 
+class TempRange(Enum):
+    NOMINAL = (False, "nominal")
+    EXTENDED = (True, "extended")
+
+    # noinspection PyInitNewSignature
+    def __init__(self, extended, string):
+        self._extended = extended
+        self._string = string
+
+    @property
+    def extended(self):
+        return self._extended
+
+    def __str__(self):
+        return self._string
+
+
 #
 #######################################################################
 # Default system-wide Reader Parameters
@@ -183,6 +200,7 @@ class ReaderParams:
     read_default_bank = MemoryBank.TID
     read_default_word_ptr = 0
     read_default_word_count = 4  # FIXME: check this!
+    temp_range = TempRange.NOMINAL
 
 
 readerParams = ReaderParams()
@@ -642,26 +660,14 @@ def get_blf(dr=None, trcal=None):
     return dr.eval() / trcal
 
 
-class TempRange(Enum):
-    NOMINAL = (False, "nominal")
-    EXTENDED = (True, "extended")
+def get_frt(trcal=None, dr=None, temp_range=None):
+    trcal = trcal if trcal is not None else readerParams.trcal
+    dr = dr if dr is not None else readerParams.divide_ratio
+    temp_range = (temp_range if temp_range is not None
+                  else readerParams.temp_range)
 
-    # noinspection PyInitNewSignature
-    def __init__(self, extended, s):
-        self._extended = extended
-        self._s = s
-
-    @property
-    def extended(self):
-        return self._extended
-
-    def __str__(self):
-        return self._s
-
-
-def get_frt(trcal, dr, temp_range):
-    if dr == DivideRatio.DR_8:
-        if temp_range == TempRange.EXTENDED:
+    if dr is DivideRatio.DR_643:
+        if temp_range is TempRange.EXTENDED:
             f = [(33.633, 0.15), (66.033, 0.22), (82.467, 0.15),
                  (84.133, 0.10), (131.967, 0.12), (198.00, 0.07),
                  (227.25, 0.05)]
@@ -670,7 +676,7 @@ def get_frt(trcal, dr, temp_range):
                  (82.467, 0.12), (131.967, 0.10), (198.00, 0.07),
                  (227.25, 0.05)]
     else:
-        if temp_range == TempRange.EXTENDED:
+        if temp_range is TempRange.EXTENDED:
             f = [(24.7500, 0.19), (30.9375, 0.15), (49.50, 0.10),
                  (75.0000, 0.07), (202.0, 0.04)]
         else:

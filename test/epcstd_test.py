@@ -573,7 +573,7 @@ class TestTagFrames(unittest.TestCase):
                                0.00065, 8)
 
 
-class TestFrameAccessors(unittest.TestCase):
+class TestReaderFrameAccessors(unittest.TestCase):
 
     def setUp(self):
         self.slow_tari = 12.5e-6
@@ -707,3 +707,35 @@ class TestFrameAccessors(unittest.TestCase):
             epcstd.get_reader_frame_duration(self.query),
             self.fast_query_frame.duration, 8)
 
+
+class TestTagFrameAccessors(unittest.TestCase):
+    def setUp(self):
+        self.preambles = [epcstd.create_tag_preamble(m, trext)
+                          for m in epcstd.TagEncoding
+                          for trext in (True, False)]
+        self.replies = [epcstd.QueryReply(), epcstd.AckReply(epc="01234567")]
+        self.blfs = [40e3, 160e3, 360e3]
+
+    def test_get_tag_frame_duration_equals_tag_frame_getter(self):
+        for preamble in self.preambles:
+            for reply in self.replies:
+                for blf in self.blfs:
+                    frame = epcstd.TagFrame(preamble, reply)
+                    self.assertAlmostEqual(
+                        epcstd.get_tag_frame_duration(
+                            reply, blf, preamble.encoding, preamble.extended),
+                        frame.get_duration(blf), 8)
+
+    def test_get_tag_frame_duration_uses_default_params(self):
+        epcstd.readerParams.divide_ratio = epcstd.DivideRatio.DR_8
+        for preamble in self.preambles:
+            for reply in self.replies:
+                for blf in self.blfs:
+                    epcstd.readerParams.trext = preamble.extended
+                    epcstd.readerParams.tag_encoding = preamble.encoding
+                    epcstd.readerParams.trcal = \
+                        epcstd.readerParams.divide_ratio.eval() / blf
+                    frame = epcstd.TagFrame(preamble, reply)
+                    self.assertAlmostEqual(
+                        epcstd.get_tag_frame_duration(reply),
+                        frame.get_duration(blf), 8, "frame = {}".format(frame))

@@ -573,6 +573,9 @@ class ReaderFrame:
     def duration(self):
         return self.body_duration + self.preamble.duration
 
+    def __str__(self):
+        return "Frame{{{o.preamble}{o.command}}}".format(o=self)
+
 
 class TagFrame:
     def __init__(self, preamble, reply):
@@ -590,6 +593,9 @@ class TagFrame:
         t_body = self.get_body_duration(blf)
         t_suffix = m / blf
         return t_preamble + t_body + t_suffix
+
+    def __str__(self):
+        return "Frame{{{o.preamble}{o.reply}}}".format(o=self)
 
 
 #
@@ -615,3 +621,12 @@ def get_reader_frame_duration(command, tari=None, rtcal=None, trcal=None,
     return frame.duration
 
 
+def get_tag_frame_duration(reply, blf=None, encoding=None, trext=None):
+    blf = blf if blf is not None else (readerParams.divide_ratio.eval() /
+                                       readerParams.trcal)
+    encoding = encoding if encoding is not None else readerParams.tag_encoding
+    trext = trext if trext is not None else readerParams.trext
+
+    preamble = create_tag_preamble(encoding, trext)
+    frame = TagFrame(preamble, reply)
+    return frame.get_duration(blf)

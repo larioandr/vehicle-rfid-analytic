@@ -836,6 +836,19 @@ class TestLinkTimings(unittest.TestCase):
         self.fast_blf = epcstd.get_blf(self.fast_dr, self.fast_trcal)
         self.fast_frt = epcstd.get_frt(self.fast_trcal, self.fast_dr,
                                        self.temp)
+        self.exp_slow_t1_min = 281.25e-6 * (1.0 - self.slow_frt) - 2e-6
+        self.exp_fast_t1_min = 15.625e-6 * (1.0 - self.fast_frt) - 2e-6
+        self.exp_slow_t1_max = 281.25e-6 * (1.0 + self.slow_frt) + 2e-6
+        self.exp_fast_t1_max = 15.625e-6 * (1.0 + self.fast_frt) + 2e-6
+        self.exp_slow_t2_min = 84.375e-06
+        self.exp_fast_t2_min = 2.4169921875e-06
+        self.exp_slow_t2_max = 562.5e-6
+        self.exp_fast_t2_max = 16.11328125e-06
+        self.exp_t3_min = 0.0
+        self.exp_slow_t4_min = 150e-6
+        self.exp_fast_t4_min = 31.25e-6
+        self.exp_slow_t7_min = 562.5e-6
+        self.exp_fast_t7_min = 250.0e-6
 
     def test_get_pri(self):
         self.assertAlmostEqual(
@@ -855,20 +868,6 @@ class TestLinkTimings(unittest.TestCase):
         self.assertAlmostEqual(epcstd.get_pri(), 1.0 / self.fast_blf, 8)
 
     def test_timing_getters(self):
-        exp_slow_t1_min = 281.25e-6 * (1.0 - self.slow_frt) - 2e-6
-        exp_fast_t1_min = 15.625e-6 * (1.0 - self.fast_frt) - 2e-6
-        exp_slow_t1_max = 281.25e-6 * (1.0 + self.slow_frt) + 2e-6
-        exp_fast_t1_max = 15.625e-6 * (1.0 + self.fast_frt) + 2e-6
-        exp_slow_t2_min = 84.375e-06
-        exp_fast_t2_min = 2.4169921875e-06
-        exp_slow_t2_max = 562.5e-6
-        exp_fast_t2_max = 16.11328125e-06
-        exp_t3_min = 0.0
-        exp_slow_t4_min = 150e-6
-        exp_fast_t4_min = 31.25e-6
-        exp_slow_t7_min = 562.5e-6
-        exp_fast_t7_min = 250.0e-6
-
         slow_t1_min = epcstd.get_t1_min(
             rtcal=self.slow_rtcal, trcal=self.slow_trcal, dr=self.slow_dr,
             temp=self.temp)
@@ -906,27 +905,121 @@ class TestLinkTimings(unittest.TestCase):
         fast_t7_min = epcstd.get_t7_min(trcal=self.fast_trcal, dr=self.fast_dr)
         t7_max = epcstd.get_t7_max()
 
-        self.assertAlmostEqual(slow_t1_min, exp_slow_t1_min, 8, "slow T1(min)")
-        self.assertAlmostEqual(fast_t1_min, exp_fast_t1_min, 8, "fast T1(min)")
-        self.assertAlmostEqual(slow_t1_max, exp_slow_t1_max, 8, "slow T1(max)")
-        self.assertAlmostEqual(fast_t1_max, exp_fast_t1_max, 8, "fast T1(max)")
-        self.assertAlmostEqual(slow_t2_min, exp_slow_t2_min, 8, "slow T2(min)")
-        self.assertAlmostEqual(fast_t2_min, exp_fast_t2_min, 8, "fast T2(min)")
-        self.assertAlmostEqual(slow_t2_max, exp_slow_t2_max, 8, "slow T2(max)")
-        self.assertAlmostEqual(fast_t2_max, exp_fast_t2_max, 8, "fast T2(max)")
-        self.assertAlmostEqual(t3_min, exp_t3_min, 8, "T3(min)")
-        self.assertAlmostEqual(slow_t4_min, exp_slow_t4_min, 8, "slow T4(min)")
-        self.assertAlmostEqual(fast_t4_min, exp_fast_t4_min, 8, "fast T4(min)")
+        self.assertAlmostEqual(
+            slow_t1_min, self.exp_slow_t1_min, 8, "slow T1(min)")
+        self.assertAlmostEqual(
+            fast_t1_min, self.exp_fast_t1_min, 8, "fast T1(min)")
+        self.assertAlmostEqual(
+            slow_t1_max, self.exp_slow_t1_max, 8, "slow T1(max)")
+        self.assertAlmostEqual(
+            fast_t1_max, self.exp_fast_t1_max, 8, "fast T1(max)")
+        self.assertAlmostEqual(
+            slow_t2_min, self.exp_slow_t2_min, 8, "slow T2(min)")
+        self.assertAlmostEqual(
+            fast_t2_min, self.exp_fast_t2_min, 8, "fast T2(min)")
+        self.assertAlmostEqual(
+            slow_t2_max, self.exp_slow_t2_max, 8, "slow T2(max)")
+        self.assertAlmostEqual(
+            fast_t2_max, self.exp_fast_t2_max, 8, "fast T2(max)")
+        self.assertAlmostEqual(
+            t3_min, self.exp_t3_min, 8, "T3(min)")
+        self.assertAlmostEqual(
+            slow_t4_min, self.exp_slow_t4_min, 8, "slow T4(min)")
+        self.assertAlmostEqual(
+            fast_t4_min, self.exp_fast_t4_min, 8, "fast T4(min)")
 
         # Since T5(min) and T5(min) formulas are identical to T1(min),
         # compare with T1(min) expected value
-        self.assertAlmostEqual(slow_t5_min, exp_slow_t1_min, 8, "slow T5(min)")
-        self.assertAlmostEqual(fast_t5_min, exp_fast_t1_min, 8, "fast T5(min)")
+        self.assertAlmostEqual(
+            slow_t5_min, self.exp_slow_t1_min, 8, "slow T5(min)")
+        self.assertAlmostEqual(
+            fast_t5_min, self.exp_fast_t1_min, 8, "fast T5(min)")
         self.assertAlmostEqual(t5_max, 20e-3, 8, "T5(max)")
-        self.assertAlmostEqual(slow_t6_min, exp_slow_t1_min, 8, "slow T5(min)")
-        self.assertAlmostEqual(fast_t6_min, exp_fast_t1_min, 8, "fast T5(min)")
+        self.assertAlmostEqual(
+            slow_t6_min, self.exp_slow_t1_min, 8, "slow T5(min)")
+        self.assertAlmostEqual(
+            fast_t6_min, self.exp_fast_t1_min, 8, "fast T5(min)")
         self.assertAlmostEqual(t6_max, 20e-3, 8, "T6(max)")
 
-        self.assertAlmostEqual(slow_t7_min, exp_slow_t7_min, 8, "slow T7(min)")
-        self.assertAlmostEqual(fast_t7_min, exp_fast_t7_min, 8, "fast T7(min)")
+        self.assertAlmostEqual(
+            slow_t7_min, self.exp_slow_t7_min, 8, "slow T7(min)")
+        self.assertAlmostEqual(
+            fast_t7_min, self.exp_fast_t7_min, 8, "fast T7(min)")
         self.assertAlmostEqual(t7_max, 20e-3, 8, "T7(max)")
+
+    def test_timing_getters_use_readerParams(self):
+        #
+        # Setting up slow link parameters
+        #
+        epcstd.readerParams.rtcal = self.slow_rtcal
+        epcstd.readerParams.trcal = self.slow_trcal
+        epcstd.readerParams.divide_ratio = self.slow_dr
+        epcstd.readerParams.temp_range = self.temp
+
+        t1_min = epcstd.get_t1_min()
+        t1_max = epcstd.get_t1_max()
+        t2_min = epcstd.get_t2_min()
+        t2_max = epcstd.get_t2_max()
+        t3_min = epcstd.get_t3_min()
+        t4_min = epcstd.get_t4_min()
+        t5_min = epcstd.get_t5_min()
+        t5_max = epcstd.get_t5_max()
+        t6_min = epcstd.get_t6_min()
+        t6_max = epcstd.get_t6_max()
+        t7_min = epcstd.get_t7_min()
+        t7_max = epcstd.get_t7_max()
+
+        self.assertAlmostEqual(t1_min, self.exp_slow_t1_min, 8, "slow T1(min)")
+        self.assertAlmostEqual(t1_max, self.exp_slow_t1_max, 8, "slow T1(max)")
+        self.assertAlmostEqual(t2_min, self.exp_slow_t2_min, 8, "slow T2(min)")
+        self.assertAlmostEqual(t2_max, self.exp_slow_t2_max, 8, "slow T2(max)")
+        self.assertAlmostEqual(t3_min, self.exp_t3_min, 8, "slow T3(min)")
+        self.assertAlmostEqual(t4_min, self.exp_slow_t4_min, 8, "slow T4(min)")
+
+        # Since T5(min) and T5(min) formulas are identical to T1(min),
+        # compare with T1(min) expected value
+        self.assertAlmostEqual(t5_min, self.exp_slow_t1_min, 8, "slow T5(min)")
+        self.assertAlmostEqual(t5_max, 20e-3, 8, "slow T5(max)")
+        self.assertAlmostEqual(t6_min, self.exp_slow_t1_min, 8, "slow T6(min)")
+        self.assertAlmostEqual(t6_max, 20e-3, 8, "T6(max)")
+
+        self.assertAlmostEqual(t7_min, self.exp_slow_t7_min, 8, "slow T7(min)")
+        self.assertAlmostEqual(t7_max, 20e-3, 8, "slow T7(max)")
+
+        #
+        # Setting up fast link parameters
+        #
+        epcstd.readerParams.rtcal = self.fast_rtcal
+        epcstd.readerParams.trcal = self.fast_trcal
+        epcstd.readerParams.divide_ratio = self.fast_dr
+        epcstd.readerParams.temp_range = self.temp
+
+        t1_min = epcstd.get_t1_min()
+        t1_max = epcstd.get_t1_max()
+        t2_min = epcstd.get_t2_min()
+        t2_max = epcstd.get_t2_max()
+        t3_min = epcstd.get_t3_min()
+        t4_min = epcstd.get_t4_min()
+        t5_min = epcstd.get_t5_min()
+        t5_max = epcstd.get_t5_max()
+        t6_min = epcstd.get_t6_min()
+        t6_max = epcstd.get_t6_max()
+        t7_min = epcstd.get_t7_min()
+        t7_max = epcstd.get_t7_max()
+
+        self.assertAlmostEqual(t1_min, self.exp_fast_t1_min, 8, "fast T1(min)")
+        self.assertAlmostEqual(t1_max, self.exp_fast_t1_max, 8, "fast T1(max)")
+        self.assertAlmostEqual(t2_min, self.exp_fast_t2_min, 8, "fast T2(min)")
+        self.assertAlmostEqual(t2_max, self.exp_fast_t2_max, 8, "fast T2(max)")
+        self.assertAlmostEqual(t3_min, self.exp_t3_min, 8, "fast T3(min)")
+        self.assertAlmostEqual(t4_min, self.exp_fast_t4_min, 8, "fast T4(min)")
+
+        # Since T5(min) and T5(min) formulas are identical to T1(min),
+        # compare with T1(min) expected value
+        self.assertAlmostEqual(t5_min, self.exp_fast_t1_min, 8, "fast T5(min)")
+        self.assertAlmostEqual(t5_max, 20e-3, 8, "fast T5(max)")
+        self.assertAlmostEqual(t6_min, self.exp_fast_t1_min, 8, "fast T6(min)")
+        self.assertAlmostEqual(t6_max, 20e-3, 8, "fast T6(max)")
+
+        self.assertAlmostEqual(t7_min, self.exp_fast_t7_min, 8, "fast T7(min)")
+        self.assertAlmostEqual(t7_max, 20e-3, 8, "fast T7(max)")

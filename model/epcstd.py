@@ -694,108 +694,91 @@ def get_pri(trcal=None, dr=None):
     return trcal / dr.eval()
 
 
-def get_t1_min(rtcal=None, trcal=None, dr=None, temp=None):
-    rtcal = rtcal if rtcal is not None else readerParams.rtcal
-    trcal = trcal if trcal is not None else readerParams.trcal
-    dr = dr if dr is not None else readerParams.divide_ratio
-    temp = temp if temp is not None else readerParams.temp_range
-
-    pri = get_pri(trcal, dr)
-    frt = get_frt(trcal, dr, temp)
-    return max(rtcal, pri * 10.0) * (1.0 - frt) - 2e-6
-
-
-def get_t1_max(rtcal=None, trcal=None, dr=None, temp=None):
-    rtcal = rtcal if rtcal is not None else readerParams.rtcal
-    trcal = trcal if trcal is not None else readerParams.trcal
-    dr = dr if dr is not None else readerParams.divide_ratio
-    temp = temp if temp is not None else readerParams.temp_range
-
-    pri = get_pri(trcal, dr)
-    frt = get_frt(trcal, dr, temp)
-    return max(rtcal, pri * 10.0) * (1.0 + frt) + 2e-6
-
-
-def get_t2_min(trcal=None, dr=None):
-    trcal = trcal if trcal is not None else readerParams.trcal
-    dr = dr if dr is not None else readerParams.divide_ratio
-    return 3.0 * get_pri(trcal, dr)
-
-
-def get_t2_max(trcal=None, dr=None):
-    trcal = trcal if trcal is not None else readerParams.trcal
-    dr = dr if dr is not None else readerParams.divide_ratio
-    return 20.0 * get_pri(trcal, dr)
-
-
-def get_t3_min():
-    return 0.0
-
-
-def get_t4_min(rtcal=None):
-    rtcal = rtcal if rtcal is not None else readerParams.rtcal
-    return 2.0 * rtcal
-
-
-def get_t4_max():
-    return 0.02
-
-
-def get_t5_min(rtcal=None, trcal=None, dr=None, temp=None):
-    return get_t1_min(rtcal, trcal, dr, temp)
-
-
-def get_t5_max():
-    return 0.02
-
-
-def get_t6_min(rtcal=None, trcal=None, dr=None, temp=None):
-    return get_t1_min(rtcal, trcal, dr, temp)
-
-
-def get_t6_max():
-    return 0.02
-
-
-def get_t7_min(trcal=None, dr=None):
-    return max(get_t2_max(trcal, dr), 250e-6)
-
-
-def get_t7_max():
-    return 0.02
-
-
 def get_t_min(n, rtcal=None, trcal=None, dr=None, temp=None):
-    if n == 1:
-        return get_t1_min(rtcal, trcal, dr, temp)
+    rtcal = rtcal if rtcal is not None else readerParams.rtcal
+    trcal = trcal if trcal is not None else readerParams.trcal
+    dr = dr if dr is not None else readerParams.divide_ratio
+    temp = temp if temp is not None else readerParams.temp_range
+    if n in [1, 5, 6]:
+        pri = get_pri(trcal, dr)
+        frt = get_frt(trcal, dr, temp)
+        return max(rtcal, pri * 10.0) * (1.0 - frt) - 2e-6
     elif n == 2:
-        return get_t2_min(trcal, dr)
+        return 3.0 * get_pri(trcal, dr)
     elif n == 3:
-        return get_t3_min()
+        return 0.0
     elif n == 4:
-        return get_t4_min(rtcal)
-    elif n == 5:
-        return get_t5_min(rtcal, trcal, dr, temp)
-    elif n == 6:
-        return get_t6_min(rtcal, trcal, dr, temp)
+        return 2.0 * rtcal
     elif n == 7:
-        return get_t7_min(trcal, dr)
+        return max(get_t2_max(trcal, dr), 250e-6)
     else:
         raise ValueError("1 <= n <= 7, but n={} found".format(n))
 
 
 def get_t_max(n, rtcal=None, trcal=None, dr=None, temp=None):
+    rtcal = rtcal if rtcal is not None else readerParams.rtcal
+    trcal = trcal if trcal is not None else readerParams.trcal
+    dr = dr if dr is not None else readerParams.divide_ratio
+    temp = temp if temp is not None else readerParams.temp_range
     if n == 1:
-        return get_t1_max(rtcal, trcal, dr, temp)
+        pri = get_pri(trcal, dr)
+        frt = get_frt(trcal, dr, temp)
+        return max(rtcal, pri * 10.0) * (1.0 + frt) + 2e-6
     elif n == 2:
-        return get_t2_max(trcal, dr)
-    elif n == 4:
-        return get_t4_max()
-    elif n == 5:
-        return get_t5_max()
-    elif n == 6:
-        return get_t6_max()
-    elif n == 7:
-        return get_t7_max()
+        return 20.0 * get_pri(trcal, dr)
+    elif 4 <= n <= 7:
+        return 0.02
     else:
         raise ValueError("1 <= n <= 7 and n != 3, but n={} found".format(n))
+
+
+def get_t1_min(rtcal=None, trcal=None, dr=None, temp=None):
+    return get_t_min(1, rtcal, trcal, dr, temp)
+
+
+def get_t1_max(rtcal=None, trcal=None, dr=None, temp=None):
+    return get_t_max(1, rtcal, trcal, dr, temp)
+
+
+def get_t2_min(trcal=None, dr=None):
+    return get_t_min(2, trcal=trcal, dr=dr)
+
+
+def get_t2_max(trcal=None, dr=None):
+    return get_t_max(2, trcal=trcal, dr=dr)
+
+
+def get_t3_min():
+    return get_t_min(3)
+
+
+def get_t4_min(rtcal=None):
+    return get_t_min(4, rtcal=rtcal)
+
+
+def get_t4_max():
+    return get_t_max(4)
+
+
+def get_t5_min(rtcal=None, trcal=None, dr=None, temp=None):
+    return get_t_min(1, rtcal, trcal, dr, temp)
+
+
+def get_t5_max():
+    return get_t_max(5)
+
+
+def get_t6_min(rtcal=None, trcal=None, dr=None, temp=None):
+    return get_t_min(1, rtcal, trcal, dr, temp)
+
+
+def get_t6_max():
+    return get_t_max(6)
+
+
+def get_t7_min(trcal=None, dr=None):
+    return get_t_min(7, trcal=trcal, dr=dr)
+
+
+def get_t7_max():
+    return get_t_max(7)

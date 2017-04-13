@@ -763,3 +763,39 @@ def get_t7_min(trcal=None, dr=None):
 
 def get_t7_max():
     return 0.02
+
+
+def get_t_min(n, rtcal=None, trcal=None, dr=None, temp=None):
+    if n == 1:
+        return get_t1_min(rtcal, trcal, dr, temp)
+    elif n == 2:
+        return get_t2_min(trcal, dr)
+    elif n == 3:
+        return get_t3_min()
+    elif n == 4:
+        return get_t4_min(rtcal)
+    elif n == 5:
+        return get_t5_min(rtcal, trcal, dr, temp)
+    elif n == 6:
+        return get_t6_min(rtcal, trcal, dr, temp)
+    elif n == 7:
+        return get_t7_min(trcal, dr)
+    else:
+        raise ValueError("1 <= n <= 7, but n={} found".format(n))
+
+
+def get_t_max(n, rtcal=None, trcal=None, dr=None, temp=None):
+    if n == 1:
+        return get_t1_max(rtcal, trcal, dr, temp)
+    elif n == 2:
+        return get_t2_max(trcal, dr)
+    elif n == 4:
+        return get_t4_max()
+    elif n == 5:
+        return get_t5_max()
+    elif n == 6:
+        return get_t6_max()
+    elif n == 7:
+        return get_t7_max()
+    else:
+        raise ValueError("1 <= n <= 7 and n != 3, but n={} found".format(n))

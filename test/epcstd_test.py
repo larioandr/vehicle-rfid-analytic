@@ -947,14 +947,20 @@ class TestLinkTimings(unittest.TestCase):
             fast_t7_min, self.exp_fast_t7_min, 8, "fast T7(min)")
         self.assertAlmostEqual(t7_max, 20e-3, 8, "T7(max)")
 
+    @staticmethod
+    def set_reader_params(rtcal, trcal, dr, temp):
+        epcstd.readerParams.rtcal = rtcal
+        epcstd.readerParams.trcal = trcal
+        epcstd.readerParams.divide_ratio = dr
+        epcstd.readerParams.temp_range = temp
+
     def test_timing_getters_use_readerParams(self):
+
         #
         # Setting up slow link parameters
         #
-        epcstd.readerParams.rtcal = self.slow_rtcal
-        epcstd.readerParams.trcal = self.slow_trcal
-        epcstd.readerParams.divide_ratio = self.slow_dr
-        epcstd.readerParams.temp_range = self.temp
+        self.set_reader_params(self.slow_rtcal, self.slow_trcal, self.slow_dr,
+                               self.temp)
 
         t1_min = epcstd.get_t1_min()
         t1_max = epcstd.get_t1_max()
@@ -989,10 +995,8 @@ class TestLinkTimings(unittest.TestCase):
         #
         # Setting up fast link parameters
         #
-        epcstd.readerParams.rtcal = self.fast_rtcal
-        epcstd.readerParams.trcal = self.fast_trcal
-        epcstd.readerParams.divide_ratio = self.fast_dr
-        epcstd.readerParams.temp_range = self.temp
+        self.set_reader_params(self.fast_rtcal, self.fast_trcal, self.fast_dr,
+                               self.temp)
 
         t1_min = epcstd.get_t1_min()
         t1_max = epcstd.get_t1_max()
@@ -1023,3 +1027,213 @@ class TestLinkTimings(unittest.TestCase):
 
         self.assertAlmostEqual(t7_min, self.exp_fast_t7_min, 8, "fast T7(min)")
         self.assertAlmostEqual(t7_max, 20e-3, 8, "fast T7(max)")
+
+    def test_min_timeout_getter(self):
+        slow_t1 = epcstd.get_t_min(n=1, rtcal=self.slow_rtcal,
+                                   trcal=self.slow_trcal, dr=self.slow_dr,
+                                   temp=self.temp)
+        slow_t2 = epcstd.get_t_min(n=2, rtcal=self.slow_rtcal,
+                                   trcal=self.slow_trcal, dr=self.slow_dr,
+                                   temp=self.temp)
+        slow_t3 = epcstd.get_t_min(n=3, rtcal=self.slow_rtcal,
+                                   trcal=self.slow_trcal, dr=self.slow_dr,
+                                   temp=self.temp)
+        slow_t4 = epcstd.get_t_min(n=4, rtcal=self.slow_rtcal,
+                                   trcal=self.slow_trcal, dr=self.slow_dr,
+                                   temp=self.temp)
+        slow_t5 = epcstd.get_t_min(n=5, rtcal=self.slow_rtcal,
+                                   trcal=self.slow_trcal, dr=self.slow_dr,
+                                   temp=self.temp)
+        slow_t6 = epcstd.get_t_min(n=6, rtcal=self.slow_rtcal,
+                                   trcal=self.slow_trcal, dr=self.slow_dr,
+                                   temp=self.temp)
+        slow_t7 = epcstd.get_t_min(n=7, rtcal=self.slow_rtcal,
+                                   trcal=self.slow_trcal, dr=self.slow_dr,
+                                   temp=self.temp)
+
+        fast_t1 = epcstd.get_t_min(n=1, rtcal=self.fast_rtcal,
+                                   trcal=self.fast_trcal, dr=self.fast_dr,
+                                   temp=self.temp)
+        fast_t2 = epcstd.get_t_min(n=2, rtcal=self.fast_rtcal,
+                                   trcal=self.fast_trcal, dr=self.fast_dr,
+                                   temp=self.temp)
+        fast_t3 = epcstd.get_t_min(n=3, rtcal=self.fast_rtcal,
+                                   trcal=self.fast_trcal, dr=self.fast_dr,
+                                   temp=self.temp)
+        fast_t4 = epcstd.get_t_min(n=4, rtcal=self.fast_rtcal,
+                                   trcal=self.fast_trcal, dr=self.fast_dr,
+                                   temp=self.temp)
+        fast_t5 = epcstd.get_t_min(n=5, rtcal=self.fast_rtcal,
+                                   trcal=self.fast_trcal, dr=self.fast_dr,
+                                   temp=self.temp)
+        fast_t6 = epcstd.get_t_min(n=6, rtcal=self.fast_rtcal,
+                                   trcal=self.fast_trcal, dr=self.fast_dr,
+                                   temp=self.temp)
+        fast_t7 = epcstd.get_t_min(n=7, rtcal=self.fast_rtcal,
+                                   trcal=self.fast_trcal, dr=self.fast_dr,
+                                   temp=self.temp)
+
+        self.assertAlmostEqual(slow_t1, self.exp_slow_t1_min, 8, "slow T1")
+        self.assertAlmostEqual(slow_t2, self.exp_slow_t2_min, 8, "slow T2")
+        self.assertAlmostEqual(slow_t3, self.exp_t3_min, 8, "slow T3")
+        self.assertAlmostEqual(slow_t4, self.exp_slow_t4_min, 8, "slow T4")
+        self.assertAlmostEqual(slow_t5, self.exp_slow_t1_min, 8, "slow T5")
+        self.assertAlmostEqual(slow_t6, self.exp_slow_t1_min, 8, "slow T6")
+        self.assertAlmostEqual(slow_t7, self.exp_slow_t7_min, 8, "slow T7")
+
+        self.assertAlmostEqual(fast_t1, self.exp_fast_t1_min, 8, "fast T1")
+        self.assertAlmostEqual(fast_t2, self.exp_fast_t2_min, 8, "fast T2")
+        self.assertAlmostEqual(fast_t3, self.exp_t3_min, 8, "fast T3")
+        self.assertAlmostEqual(fast_t4, self.exp_fast_t4_min, 8, "fast T4")
+        self.assertAlmostEqual(fast_t5, self.exp_fast_t1_min, 8, "fast T5")
+        self.assertAlmostEqual(fast_t6, self.exp_fast_t1_min, 8, "fast T6")
+        self.assertAlmostEqual(fast_t7, self.exp_fast_t7_min, 8, "fast T7")
+
+        with self.assertRaises(ValueError):
+            epcstd.get_t_min(0, self.slow_rtcal, self.slow_trcal, self.slow_dr,
+                             self.temp)
+            epcstd.get_t_min(8, self.slow_rtcal, self.slow_trcal, self.slow_dr,
+                             self.temp)
+
+    def test_max_timeout_getter(self):
+        slow_t1 = epcstd.get_t_max(n=1, rtcal=self.slow_rtcal,
+                                   trcal=self.slow_trcal, dr=self.slow_dr,
+                                   temp=self.temp)
+        slow_t2 = epcstd.get_t_max(n=2, rtcal=self.slow_rtcal,
+                                   trcal=self.slow_trcal, dr=self.slow_dr,
+                                   temp=self.temp)
+        slow_t4 = epcstd.get_t_max(n=4, rtcal=self.slow_rtcal,
+                                   trcal=self.slow_trcal, dr=self.slow_dr,
+                                   temp=self.temp)
+        slow_t5 = epcstd.get_t_max(n=5, rtcal=self.slow_rtcal,
+                                   trcal=self.slow_trcal, dr=self.slow_dr,
+                                   temp=self.temp)
+        slow_t6 = epcstd.get_t_max(n=6, rtcal=self.slow_rtcal,
+                                   trcal=self.slow_trcal, dr=self.slow_dr,
+                                   temp=self.temp)
+        slow_t7 = epcstd.get_t_max(n=7, rtcal=self.slow_rtcal,
+                                   trcal=self.slow_trcal, dr=self.slow_dr,
+                                   temp=self.temp)
+
+        fast_t1 = epcstd.get_t_max(n=1, rtcal=self.fast_rtcal,
+                                   trcal=self.fast_trcal, dr=self.fast_dr,
+                                   temp=self.temp)
+        fast_t2 = epcstd.get_t_max(n=2, rtcal=self.fast_rtcal,
+                                   trcal=self.fast_trcal, dr=self.fast_dr,
+                                   temp=self.temp)
+        fast_t4 = epcstd.get_t_max(n=4, rtcal=self.fast_rtcal,
+                                   trcal=self.fast_trcal, dr=self.fast_dr,
+                                   temp=self.temp)
+        fast_t5 = epcstd.get_t_max(n=5, rtcal=self.fast_rtcal,
+                                   trcal=self.fast_trcal, dr=self.fast_dr,
+                                   temp=self.temp)
+        fast_t6 = epcstd.get_t_max(n=6, rtcal=self.fast_rtcal,
+                                   trcal=self.fast_trcal, dr=self.fast_dr,
+                                   temp=self.temp)
+        fast_t7 = epcstd.get_t_max(n=7, rtcal=self.fast_rtcal,
+                                   trcal=self.fast_trcal, dr=self.fast_dr,
+                                   temp=self.temp)
+
+        self.assertAlmostEqual(slow_t1, self.exp_slow_t1_max, 8, "slow T1")
+        self.assertAlmostEqual(slow_t2, self.exp_slow_t2_max, 8, "slow T2")
+        self.assertAlmostEqual(slow_t4, 20e-3, 8, "slow T4")
+        self.assertAlmostEqual(slow_t5, 20e-3, 8, "slow T5")
+        self.assertAlmostEqual(slow_t6, 20e-3, 8, "slow T6")
+        self.assertAlmostEqual(slow_t7, 20e-3, 8, "slow T7")
+
+        self.assertAlmostEqual(fast_t1, self.exp_fast_t1_max, 8, "fast T1")
+        self.assertAlmostEqual(fast_t2, self.exp_fast_t2_max, 8, "fast T2")
+        self.assertAlmostEqual(fast_t4, 20e-3, 8, "fast T4")
+        self.assertAlmostEqual(fast_t5, 20e-3, 8, "fast T5")
+        self.assertAlmostEqual(fast_t6, 20e-3, 8, "fast T6")
+        self.assertAlmostEqual(fast_t7, 20e-3, 8, "fast T7")
+
+        with self.assertRaises(ValueError):
+            epcstd.get_t_max(3, self.slow_rtcal, self.slow_trcal, self.slow_dr,
+                             self.temp)
+            epcstd.get_t_max(0, self.slow_rtcal, self.slow_trcal, self.slow_dr,
+                             self.temp)
+            epcstd.get_t_max(8, self.slow_rtcal, self.slow_trcal, self.slow_dr,
+                             self.temp)
+
+    def test_min_timeout_getter_bound_to_readerParams(self):
+        #
+        # Setting up slow parameters
+        #
+        self.set_reader_params(self.slow_rtcal, self.slow_trcal, self.slow_dr,
+                               self.temp)
+        t1 = epcstd.get_t_min(1)
+        t2 = epcstd.get_t_min(2)
+        t3 = epcstd.get_t_min(3)
+        t4 = epcstd.get_t_min(4)
+        t5 = epcstd.get_t_min(5)
+        t6 = epcstd.get_t_min(6)
+        t7 = epcstd.get_t_min(7)
+
+        self.assertAlmostEqual(t1, self.exp_slow_t1_min, 8, "slow T1")
+        self.assertAlmostEqual(t2, self.exp_slow_t2_min, 8, "slow T2")
+        self.assertAlmostEqual(t3, self.exp_t3_min, 8, "slow T3")
+        self.assertAlmostEqual(t4, self.exp_slow_t4_min, 8, "slow T4")
+        self.assertAlmostEqual(t5, self.exp_slow_t1_min, 8, "slow T5")
+        self.assertAlmostEqual(t6, self.exp_slow_t1_min, 8, "slow T6")
+        self.assertAlmostEqual(t7, self.exp_slow_t7_min, 8, "slow T7")
+
+        #
+        # Setting up fast parameters
+        #
+        self.set_reader_params(self.fast_rtcal, self.fast_trcal, self.fast_dr,
+                               self.temp)
+        t1 = epcstd.get_t_min(1)
+        t2 = epcstd.get_t_min(2)
+        t3 = epcstd.get_t_min(3)
+        t4 = epcstd.get_t_min(4)
+        t5 = epcstd.get_t_min(5)
+        t6 = epcstd.get_t_min(6)
+        t7 = epcstd.get_t_min(7)
+
+        self.assertAlmostEqual(t1, self.exp_fast_t1_min, 8, "fast T1")
+        self.assertAlmostEqual(t2, self.exp_fast_t2_min, 8, "fast T2")
+        self.assertAlmostEqual(t3, self.exp_t3_min, 8, "fast T3")
+        self.assertAlmostEqual(t4, self.exp_fast_t4_min, 8, "fast T4")
+        self.assertAlmostEqual(t5, self.exp_fast_t1_min, 8, "fast T5")
+        self.assertAlmostEqual(t6, self.exp_fast_t1_min, 8, "fast T6")
+        self.assertAlmostEqual(t7, self.exp_fast_t7_min, 8, "fast T7")
+
+    def test_max_timeout_getter_bound_to_readerParams(self):
+        #
+        # Setting up slow parameters
+        #
+        self.set_reader_params(self.slow_rtcal, self.slow_trcal, self.slow_dr,
+                               self.temp)
+        t1 = epcstd.get_t_max(1)
+        t2 = epcstd.get_t_max(2)
+        t4 = epcstd.get_t_max(4)
+        t5 = epcstd.get_t_max(5)
+        t6 = epcstd.get_t_max(6)
+        t7 = epcstd.get_t_max(7)
+
+        self.assertAlmostEqual(t1, self.exp_slow_t1_max, 8, "slow T1")
+        self.assertAlmostEqual(t2, self.exp_slow_t2_max, 8, "slow T2")
+        self.assertAlmostEqual(t4, 20e-3, 8, "slow T4")
+        self.assertAlmostEqual(t5, 20e-3, 8, "slow T5")
+        self.assertAlmostEqual(t6, 20e-3, 8, "slow T6")
+        self.assertAlmostEqual(t7, 20e-3, 8, "slow T7")
+
+        #
+        # Setting up fast parameters
+        #
+        self.set_reader_params(self.fast_rtcal, self.fast_trcal, self.fast_dr,
+                               self.temp)
+        t1 = epcstd.get_t_max(1)
+        t2 = epcstd.get_t_max(2)
+        t4 = epcstd.get_t_max(4)
+        t5 = epcstd.get_t_max(5)
+        t6 = epcstd.get_t_max(6)
+        t7 = epcstd.get_t_max(7)
+
+        self.assertAlmostEqual(t1, self.exp_fast_t1_max, 8, "fast T1")
+        self.assertAlmostEqual(t2, self.exp_fast_t2_max, 8, "fast T2")
+        self.assertAlmostEqual(t4, 20e-3, 8, "fast T4")
+        self.assertAlmostEqual(t5, 20e-3, 8, "fast T5")
+        self.assertAlmostEqual(t6, 20e-3, 8, "fast T6")
+        self.assertAlmostEqual(t7, 20e-3, 8, "fast T7")

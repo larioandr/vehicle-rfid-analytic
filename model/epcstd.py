@@ -726,7 +726,7 @@ def get_t_max(n, rtcal=None, trcal=None, dr=None, temp=None):
         return max(rtcal, pri * 10.0) * (1.0 + frt) + 2e-6
     elif n == 2:
         return 20.0 * get_pri(trcal, dr)
-    elif 4 <= n <= 7:
+    elif 5 <= n <= 7:
         return 0.02
     else:
         raise ValueError("1 <= n <= 7 and n != 3, but n={} found".format(n))

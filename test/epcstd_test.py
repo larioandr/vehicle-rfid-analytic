@@ -1107,3 +1107,51 @@ class TestLinkTimings(unittest.TestCase):
         fast = self.build_t_max_with_universal_getter()
         self.assertTimeoutsEqual(fast, self.expected_timeouts['fast'].t_max,
                                  prefix="fast", suffix="max")
+
+
+class TestSlotEstimator(unittest.TestCase):
+    def setUp(self):
+        self.params = {
+            "slow": {
+                "tari": 25.0e-6,
+                "rtcal": 75.0e-6,
+                "trcal": 225.0e-6,
+                "dr": epcstd.DivideRatio.DR_8,
+                "encoding": epcstd.TagEncoding.M8
+            },
+            "fast": {
+                "tari": 6.25e-6,
+                "rtcal": 15.625e-6,
+                "trcal": 17.1875e-6,
+                "dr": epcstd.DivideRatio.DR_8,
+                "encoding": epcstd.TagEncoding.M8
+            }
+        }
+
+    def build_explicit_estimators(self):
+        slow = self.params["slow"]
+        fast = self.params["fast"]
+        return {
+            "slow": epcstd.SlotEstimator(
+                tari=slow["tari"], rtcal=slow["rtcal"], trcal=slow["trcal"],
+                dr=slow["dr"], encoding=slow["encoding"]),
+            "fast": epcstd.SlotEstimator(
+                tari=fast["tari"], rtcal=fast["rtcal"], trcal=fast["trcal"],
+                dr=fast["dr"], encoding=fast["encoding"]),
+        }
+
+    def test_slot_estimator_creation(self):
+        slot = epcstd.SlotEstimator()
+        self.assertIsNotNone(slot.get_empty_duration(first=True))
+        self.assertIsNotNone(slot.get_collided_duration(first=True))
+        self.assertIsNotNone(slot.get_normal_duration(
+            first=True, access_ops=[]))
+
+    def test_slot_estimator_get_empty_duration(self):
+        estimators = self.build_explicit_estimators()
+
+        self.assertAlmostEqual(
+            estimators['slow'].get_empty_duration(first=True),
+            0.0
+        )
+

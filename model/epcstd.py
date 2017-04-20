@@ -201,6 +201,7 @@ class ReaderParams:
     read_default_word_ptr = 0
     read_default_word_count = 4  # FIXME: check this!
     temp_range = TempRange.NOMINAL
+    access_ops = []  # this list contains reader commands for tag access
 
 
 readerParams = ReaderParams()
@@ -782,3 +783,23 @@ def get_t7_min(trcal=None, dr=None):
 
 def get_t7_max():
     return get_t_max(7)
+
+
+#
+#######################################################################
+# Duration estimators
+#######################################################################
+#
+class SlotEstimator:
+    def __init__(self, tari=None, rtcal=None, trcal=None, dr=None,
+                 encoding=None):
+        pass
+
+    def get_empty_duration(self, first):
+        return 0
+
+    def get_collided_duration(self, first):
+        return 0
+
+    def get_normal_duration(self, first, access_ops):
+        return 0

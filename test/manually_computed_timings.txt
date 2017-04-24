@@ -1,0 +1,31 @@
+---- Fast timings ----
+:: Link settings
+Tari            : 6.25 us
+RTcal           : 15.625 us
+TRcal           : 17.875 us
+TRext           : False
+Q               : 4
+DR              : 64/3
+M               : FM0
+Target          : A
+Sel             : All
+Session         : S0
+Bank            : TID
+WordPtr         : 0
+WordCount       : 4
+:: Timings
+Query           : 199.125 us
+QueryRep        : 59.375 us
+ACK             : 200.0 us
+ReqRN           : 293.75 us
+Read            : 412.5 us
+T1(min)         : 11.28125 us
+T1(max)         : 19.96875 us
+T2(min)         : 2.51367188us
+T2(max)         : 16.7578125 us
+T3              : 0.0 us
+T4              : 31.25 us
+RN16            : 19.27148438 us
+Response        : 113.11523438 us
+Handle          : 32.67773438 us
+ReadReply       : 60.328125 us

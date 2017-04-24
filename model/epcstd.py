@@ -185,7 +185,7 @@ class TempRange(Enum):
 # Default system-wide Reader Parameters
 #######################################################################
 #
-class ReaderParams:
+class ModelParams:
     tari = 6.25e-6
     rtcal = 1.5625e-05
     trcal = 3.125e-05
@@ -203,8 +203,34 @@ class ReaderParams:
     temp_range = TempRange.NOMINAL
     access_ops = []  # this list contains reader commands for tag access
 
+    tags = []
 
-readerParams = ReaderParams()
+
+class Reader:
+    tari = 6.25e-6
+    rtcal = 1.5625e-05
+    trcal = 3.125e-05
+    delim = 12.5e-6
+    Q = 4
+    divide_ratio = DivideRatio.DR_8
+    tag_encoding = TagEncoding.FM0
+    sel = SelFlag.ALL
+    session = Session.S0
+    target = InventoryFlag.A
+    trext = False
+    access_ops = []
+
+
+class Tag:
+    epc = "000102030405060708090A0B"
+    tid = "1011121314151617"
+    height = None
+    direction = None
+    gain = 8.0
+
+
+modelParams = ModelParams()
+# readerParams = ReaderParams()
 
 
 #
@@ -265,13 +291,13 @@ class Query(Command):
     def __init__(self, dr=None, m=None, trext=None, sel=None, session=None,
                  target=None, q=None, crc=0x00):
         super().__init__(CommandCode.QUERY)
-        self.dr = dr if dr is not None else readerParams.divide_ratio
-        self.m = m if m is not None else readerParams.tag_encoding
-        self.trext = trext if trext is not None else readerParams.trext
-        self.sel = sel if sel is not None else readerParams.sel
-        self.session = session if session is not None else readerParams.session
-        self.target = target if target is not None else readerParams.target
-        self.q = q if q is not None else readerParams.Q
+        self.dr = dr if dr is not None else modelParams.divide_ratio
+        self.m = m if m is not None else modelParams.tag_encoding
+        self.trext = trext if trext is not None else modelParams.trext
+        self.sel = sel if sel is not None else modelParams.sel
+        self.session = session if session is not None else modelParams.session
+        self.target = target if target is not None else modelParams.target
+        self.q = q if q is not None else modelParams.Q
         self.crc = crc
 
     def encode(self):
@@ -289,7 +315,7 @@ class Query(Command):
 class QueryRep(Command):
     def __init__(self, session=None):
         super().__init__(CommandCode.QUERY_REP)
-        self.session = session if session is not None else readerParams.session
+        self.session = session if session is not None else modelParams.session
 
     def encode(self):
         return self.code.code + self.session.code
@@ -328,11 +354,11 @@ class Read(Command):
                  rn=0x0000, crc=0x0000):
         super().__init__(CommandCode.READ)
         self.bank = (bank if bank is not None
-                     else readerParams.read_default_bank)
+                     else modelParams.read_default_bank)
         self.word_ptr = (word_ptr if word_ptr is not None
-                         else readerParams.read_default_word_ptr)
+                         else modelParams.read_default_word_ptr)
         self.word_count = (word_count if word_count is not None
-                           else readerParams.read_default_word_count)
+                           else modelParams.read_default_word_count)
         self.rn = rn
         self.crc = crc
 
@@ -625,10 +651,10 @@ class TagFrame:
 
 def get_reader_frame_duration(command, tari=None, rtcal=None, trcal=None,
                               delim=None):
-    tari = tari if tari is not None else readerParams.tari
-    rtcal = rtcal if rtcal is not None else readerParams.rtcal
-    trcal = trcal if trcal is not None else readerParams.trcal
-    delim = delim if delim is not None else readerParams.delim
+    tari = tari if tari is not None else modelParams.tari
+    rtcal = rtcal if rtcal is not None else modelParams.rtcal
+    trcal = trcal if trcal is not None else modelParams.trcal
+    delim = delim if delim is not None else modelParams.delim
 
     if isinstance(command, Query) or (
                 isinstance(command, str) and
@@ -642,8 +668,8 @@ def get_reader_frame_duration(command, tari=None, rtcal=None, trcal=None,
 
 def get_tag_frame_duration(reply, blf=None, encoding=None, trext=None):
     blf = blf if blf is not None else get_blf()
-    encoding = encoding if encoding is not None else readerParams.tag_encoding
-    trext = trext if trext is not None else readerParams.trext
+    encoding = encoding if encoding is not None else modelParams.tag_encoding
+    trext = trext if trext is not None else modelParams.trext
 
     preamble = create_tag_preamble(encoding, trext)
     frame = TagFrame(preamble, reply)
@@ -656,16 +682,16 @@ def get_tag_frame_duration(reply, blf=None, encoding=None, trext=None):
 #######################################################################
 #
 def get_blf(dr=None, trcal=None):
-    dr = dr if dr is not None else readerParams.divide_ratio
-    trcal = trcal if trcal is not None else readerParams.trcal
+    dr = dr if dr is not None else modelParams.divide_ratio
+    trcal = trcal if trcal is not None else modelParams.trcal
     return dr.eval() / trcal
 
 
 def get_frt(trcal=None, dr=None, temp_range=None):
-    trcal = trcal if trcal is not None else readerParams.trcal
-    dr = dr if dr is not None else readerParams.divide_ratio
+    trcal = trcal if trcal is not None else modelParams.trcal
+    dr = dr if dr is not None else modelParams.divide_ratio
     temp_range = (temp_range if temp_range is not None
-                  else readerParams.temp_range)
+                  else modelParams.temp_range)
 
     if dr is DivideRatio.DR_643:
         if temp_range is TempRange.EXTENDED:
@@ -690,16 +716,16 @@ def get_frt(trcal=None, dr=None, temp_range=None):
 
 
 def get_pri(trcal=None, dr=None):
-    trcal = trcal if trcal is not None else readerParams.trcal
-    dr = dr if dr is not None else readerParams.divide_ratio
+    trcal = trcal if trcal is not None else modelParams.trcal
+    dr = dr if dr is not None else modelParams.divide_ratio
     return trcal / dr.eval()
 
 
 def get_t_min(n, rtcal=None, trcal=None, dr=None, temp=None):
-    rtcal = rtcal if rtcal is not None else readerParams.rtcal
-    trcal = trcal if trcal is not None else readerParams.trcal
-    dr = dr if dr is not None else readerParams.divide_ratio
-    temp = temp if temp is not None else readerParams.temp_range
+    rtcal = rtcal if rtcal is not None else modelParams.rtcal
+    trcal = trcal if trcal is not None else modelParams.trcal
+    dr = dr if dr is not None else modelParams.divide_ratio
+    temp = temp if temp is not None else modelParams.temp_range
     if n in [1, 5, 6]:
         pri = get_pri(trcal, dr)
         frt = get_frt(trcal, dr, temp)
@@ -717,10 +743,10 @@ def get_t_min(n, rtcal=None, trcal=None, dr=None, temp=None):
 
 
 def get_t_max(n, rtcal=None, trcal=None, dr=None, temp=None):
-    rtcal = rtcal if rtcal is not None else readerParams.rtcal
-    trcal = trcal if trcal is not None else readerParams.trcal
-    dr = dr if dr is not None else readerParams.divide_ratio
-    temp = temp if temp is not None else readerParams.temp_range
+    rtcal = rtcal if rtcal is not None else modelParams.rtcal
+    trcal = trcal if trcal is not None else modelParams.trcal
+    dr = dr if dr is not None else modelParams.divide_ratio
+    temp = temp if temp is not None else modelParams.temp_range
     if n == 1:
         pri = get_pri(trcal, dr)
         frt = get_frt(trcal, dr, temp)
@@ -729,8 +755,18 @@ def get_t_max(n, rtcal=None, trcal=None, dr=None, temp=None):
         return 20.0 * get_pri(trcal, dr)
     elif 5 <= n <= 7:
         return 0.02
+    elif n == 3 or n == 4:
+        return float('inf')
     else:
-        raise ValueError("1 <= n <= 7 and n != 3, but n={} found".format(n))
+        raise ValueError("1 <= n <= 7, but n={} found".format(n))
+
+
+def get_t(n=None, rtcal=None, trcal=None, dr=None, temp=None):
+    if n is None:
+        return [get_t(n, rtcal, trcal, dr, temp) for n in range(1, 8)]
+    else:
+        return (get_t_min(n, rtcal, trcal, dr, temp),
+                get_t_max(n, rtcal, trcal, dr, temp))
 
 
 def get_t1_min(rtcal=None, trcal=None, dr=None, temp=None):
@@ -755,10 +791,6 @@ def get_t3_min():
 
 def get_t4_min(rtcal=None):
     return get_t_min(4, rtcal=rtcal)
-
-
-def get_t4_max():
-    return get_t_max(4)
 
 
 def get_t5_min(rtcal=None, trcal=None, dr=None, temp=None):
@@ -790,16 +822,138 @@ def get_t7_max():
 # Duration estimators
 #######################################################################
 #
-class SlotEstimator:
-    def __init__(self, tari=None, rtcal=None, trcal=None, dr=None,
-                 encoding=None):
+class SlotDurationEstimator:
+
+    __allowed = ('tari', 'rtcal', 'trcal', 'delim', 'dr', 'session', 'sl', 'q',
+                 'target', 'trext', 'tagops')
+
+    def __init__(self, **kwargs):
+        for field in self.__allowed:
+            setattr(self, field, None)
+        for key, value in kwargs.items():
+            if key not in self.__allowed:
+                raise ValueError("unsupported parameter {}".format(key))
+            setattr(self, key, value)
+
+    def _get(self, name, args):
+        if name in args:
+            return args[name]
+        elif name in self.__dict__:
+            value = self.__dict__[name]
+            if value is None:
+                if name in modelParams.__dict__:
+                    value = modelParams.__dict__[name]
+                elif name in ModelParams.__dict__:
+                    value = ModelParams.__dict__[name]
+            return value
+
+    def get_empty_slot_duration(self, **kwargs):
         pass
 
-    def get_empty_duration(self, first):
-        return 0
+    def get_collided_slot_duration(self, **kwargs):
+        pass
 
-    def get_collided_duration(self, first):
-        return 0
+    def get_responded_slot_duration(self, **kwargs):
+        pass
 
-    def get_normal_duration(self, first, access_ops):
-        return 0
+
+#
+#######################################################################
+# Various helpers
+#######################################################################
+#
+# noinspection PyTypeChecker
+def get_elementary_timings(tari=None, rtcal=None, trcal=None, delim=None,
+                           temp=None, dr=None, m=None, trext=None, sel=None,
+                           session=None, target=None, q=None, bank=None,
+                           word_ptr=None, word_count=None, rn=0, crc=0,
+                           epc="00112233445566778899AABB",
+                           mem="FFEEDDCCBBAA", pc=0):
+    tari = tari if tari is not None else modelParams.tari
+    rtcal = rtcal if rtcal is not None else modelParams.rtcal
+    trcal = trcal if trcal is not None else modelParams.trcal
+    delim = delim if delim is not None else modelParams.delim
+    temp = temp if temp is not None else modelParams.temp_range
+    dr = dr if dr is not None else modelParams.divide_ratio
+    m = m if m is not None else modelParams.tag_encoding
+    trext = trext if trext is not None else modelParams.trext
+    sel = sel if sel is not None else modelParams.sel
+    session = session if session is not None else modelParams.session
+    target = target if target is not None else modelParams.target
+    q = q if q is not None else modelParams.Q
+    bank = bank if bank is not None else modelParams.read_default_bank
+    word_ptr = word_ptr if word_ptr is not None else \
+        modelParams.read_default_word_ptr
+    word_count = word_count if word_count is not None else \
+        modelParams.read_default_word_count
+
+    query = Query(dr, m, trext, sel, session, target, q, crc)
+    query_rep = QueryRep(session)
+    ack = Ack(rn)
+    req_rn = ReqRN(rn, crc)
+    read = Read(bank, word_ptr, word_count, rn, crc)
+    query_reply = QueryReply(rn)
+    ack_reply = AckReply(epc, pc, crc)
+    req_rn_reply = ReqRnReply(rn, crc)
+    read_reply = ReadReply(mem, rn, crc)
+    blf = get_blf(dr, trcal)
+
+    ret = {
+        'Tari': tari,
+        'TRcal': trcal,
+        'RTcal': rtcal,
+        'Delim': delim,
+        'TempRange': temp,
+        'TRext': trext,
+        'Q': q,
+        'DR': dr,
+        'M': m,
+        'Target': target,
+        'Sel': sel,
+        'Session': session,
+        'Bank':  bank,
+        'WordPtr': word_ptr,
+        'WordCount': word_count,
+        'Query': get_reader_frame_duration(query, tari, rtcal, trcal, delim),
+        'QueryRep': get_reader_frame_duration(query_rep, tari, rtcal, trcal,
+                                              delim),
+        'ACK': get_reader_frame_duration(ack, tari, rtcal, trcal, delim),
+        'ReqRN': get_reader_frame_duration(req_rn, tari, rtcal, trcal, delim),
+        'Read': get_reader_frame_duration(read, tari, rtcal, trcal, delim),
+        'RN16': get_tag_frame_duration(query_reply, blf, m, trext),
+        'Response': get_tag_frame_duration(ack_reply, blf, m, trext),
+        'Handle': get_tag_frame_duration(req_rn_reply, blf, m, trext),
+        'Data': get_tag_frame_duration(read_reply, blf, m, trext)
+    }
+
+    for timer_index in range(1, 8):
+        t = get_t(timer_index, rtcal=rtcal, trcal=trcal, dr=dr, temp=temp)
+        ret["T{}(min)".format(timer_index)] = t[0]
+        ret["T{}(max)".format(timer_index)] = t[1]
+
+    return ret
+
+
+def prettify_elementary_timings(timings):
+    timings_fields = tuple(elem for tupl in
+                           (("T{}(min)".format(n), "T{}(max)".format(n))
+                            for n in range(1, 8))
+                           for elem in tupl)
+    us_fields = ('Tari', 'TRcal', 'RTcal', 'Delim', 'Query', 'QueryRep', 'ACK',
+                 'ReqRN', 'Read', 'RN16', 'Response', 'Handle', 'Data'
+                 ) + timings_fields
+    ordered_fields = (
+        'Tari', 'RTcal', 'TRcal', 'Delim', 'TempRange', 'TRext',
+        'Q', 'DR', 'M', 'Target', 'Sel', 'Session', 'Bank',
+        'WordPtr', 'WordCount') + timings_fields + (
+        'Query', 'QueryRep', 'ACK',
+        'ReqRN', 'Read', 'RN16', 'Response', 'Handle', 'Data')
+    ret = []
+    for k in ordered_fields:
+        s = "{:12s}: ".format(k)
+        if k in us_fields:
+            s += "{:>14.8f} us".format(timings[k] / 1e-6)
+        else:
+            s += str(timings[k])
+        ret.append(s)
+    return "\n".join(ret)

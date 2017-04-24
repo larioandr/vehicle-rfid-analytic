@@ -151,29 +151,29 @@ class TestCommands(unittest.TestCase):
         self.assertIn("13", string)
         self.assertIn("1F", string)
 
-    def test_query_command_using_reader_params(self):
+    def test_query_command_using_modelParams(self):
         #
         # 1) Setting some initial values for Query fields in readerParams
         #    and making sure they are passed to Query as default values
         #
-        epcstd.readerParams.divide_ratio = epcstd.DivideRatio.DR_8
-        epcstd.readerParams.tag_encoding = epcstd.TagEncoding.FM0
-        epcstd.readerParams.sel = epcstd.SelFlag.SEL
-        epcstd.readerParams.session = epcstd.Session.S0
-        epcstd.readerParams.target = epcstd.InventoryFlag.A
-        epcstd.readerParams.Q = 3
-        epcstd.readerParams.trext = False
+        epcstd.modelParams.divide_ratio = epcstd.DivideRatio.DR_8
+        epcstd.modelParams.tag_encoding = epcstd.TagEncoding.FM0
+        epcstd.modelParams.sel = epcstd.SelFlag.SEL
+        epcstd.modelParams.session = epcstd.Session.S0
+        epcstd.modelParams.target = epcstd.InventoryFlag.A
+        epcstd.modelParams.Q = 3
+        epcstd.modelParams.trext = False
 
         query1 = epcstd.Query()
 
         def assert_query_params(query):
-            self.assertEqual(query.dr, epcstd.readerParams.divide_ratio)
-            self.assertEqual(query.m, epcstd.readerParams.tag_encoding)
-            self.assertEqual(query.sel, epcstd.readerParams.sel)
-            self.assertEqual(query.session, epcstd.readerParams.session)
-            self.assertEqual(query.target, epcstd.readerParams.target)
-            self.assertEqual(query.q, epcstd.readerParams.Q)
-            self.assertEqual(query.trext, epcstd.readerParams.trext)
+            self.assertEqual(query.dr, epcstd.modelParams.divide_ratio)
+            self.assertEqual(query.m, epcstd.modelParams.tag_encoding)
+            self.assertEqual(query.sel, epcstd.modelParams.sel)
+            self.assertEqual(query.session, epcstd.modelParams.session)
+            self.assertEqual(query.target, epcstd.modelParams.target)
+            self.assertEqual(query.q, epcstd.modelParams.Q)
+            self.assertEqual(query.trext, epcstd.modelParams.trext)
 
         assert_query_params(query1)
 
@@ -181,13 +181,13 @@ class TestCommands(unittest.TestCase):
         # 2) Altering values in readerParams and making sure they are
         #    passed to Query
         #
-        epcstd.readerParams.divide_ratio = epcstd.DivideRatio.DR_643
-        epcstd.readerParams.tag_encoding = epcstd.TagEncoding.M8
-        epcstd.readerParams.sel = epcstd.SelFlag.NOT_SEL
-        epcstd.readerParams.session = epcstd.Session.S3
-        epcstd.readerParams.target = epcstd.InventoryFlag.B
-        epcstd.readerParams.Q = 8
-        epcstd.readerParams.trext = True
+        epcstd.modelParams.divide_ratio = epcstd.DivideRatio.DR_643
+        epcstd.modelParams.tag_encoding = epcstd.TagEncoding.M8
+        epcstd.modelParams.sel = epcstd.SelFlag.NOT_SEL
+        epcstd.modelParams.session = epcstd.Session.S3
+        epcstd.modelParams.target = epcstd.InventoryFlag.B
+        epcstd.modelParams.Q = 8
+        epcstd.modelParams.trext = True
 
         query2 = epcstd.Query()
 
@@ -206,19 +206,19 @@ class TestCommands(unittest.TestCase):
         self.assertIn(str(epcstd.CommandCode.QUERY_REP), string)
         self.assertIn(str(epcstd.Session.S1), string)
 
-    def test_query_rep_using_reader_params(self):
+    def test_query_rep_using_modelparams(self):
         def assert_fields_match_reader_params(query_rep):
-            self.assertEqual(query_rep.session, epcstd.readerParams.session)
+            self.assertEqual(query_rep.session, epcstd.modelParams.session)
 
         # 1) Setting readerParams and checking they were passed to the
         #    command as the default params
-        epcstd.readerParams.session = epcstd.Session.S0
+        epcstd.modelParams.session = epcstd.Session.S0
         query_rep_1 = epcstd.QueryRep()
         assert_fields_match_reader_params(query_rep_1)
 
         # 2) Changing readerParams and checking the changed
         #    values were passed to new command as the default params
-        epcstd.readerParams.session = epcstd.Session.S3
+        epcstd.modelParams.session = epcstd.Session.S3
         query_rep_2 = epcstd.QueryRep()
         assert_fields_match_reader_params(query_rep_2)
 
@@ -264,28 +264,28 @@ class TestCommands(unittest.TestCase):
         self.assertEqual(cmd2.encode(), '11000010' + '11' + '1000000100000000'
                          + '1' * 8 + '1010' * 4 + '0101' * 4)
 
-    def test_read_using_reader_params(self):
+    def test_read_using_modelParams(self):
         def assert_fields_match_reader_params(cmd):
             assert isinstance(cmd, epcstd.Read)
-            self.assertEqual(cmd.bank, epcstd.readerParams.read_default_bank)
+            self.assertEqual(cmd.bank, epcstd.modelParams.read_default_bank)
             self.assertEqual(cmd.word_ptr,
-                             epcstd.readerParams.read_default_word_ptr)
+                             epcstd.modelParams.read_default_word_ptr)
             self.assertEqual(cmd.word_count,
-                             epcstd.readerParams.read_default_word_count)
+                             epcstd.modelParams.read_default_word_count)
 
         # 1) Setting readerParams and checking they were passed to the
         #    command as the default params
-        epcstd.readerParams.read_default_bank = epcstd.MemoryBank.EPC
-        epcstd.readerParams.read_default_word_ptr = 0
-        epcstd.readerParams.read_default_word_count = 10
+        epcstd.modelParams.read_default_bank = epcstd.MemoryBank.EPC
+        epcstd.modelParams.read_default_word_ptr = 0
+        epcstd.modelParams.read_default_word_count = 10
         cmd1 = epcstd.Read()
         assert_fields_match_reader_params(cmd1)
 
         # 2) Changing readerParams and checking the changed
         #    values were passed to new command as the default params
-        epcstd.readerParams.read_default_bank = epcstd.MemoryBank.TID
-        epcstd.readerParams.read_default_word_ptr = 5
-        epcstd.readerParams.read_default_word_count = 23
+        epcstd.modelParams.read_default_bank = epcstd.MemoryBank.TID
+        epcstd.modelParams.read_default_word_ptr = 5
+        epcstd.modelParams.read_default_word_count = 23
         cmd2 = epcstd.Read()
         assert_fields_match_reader_params(cmd2)
 
@@ -675,13 +675,13 @@ class TestReaderFrameAccessors(unittest.TestCase):
                 trcal=self.fast_trcal, command=encoded_query),
             self.fast_query_frame.duration, 8)
 
-    def test_get_reader_frame_duration_uses_default_reader_params(self):
+    def test_get_reader_frame_duration_uses_default_modelParams(self):
         #
         # 1) Setting readerParams to slow frame type
         #
-        epcstd.readerParams.tari = self.slow_tari
-        epcstd.readerParams.rtcal = self.slow_rtcal
-        epcstd.readerParams.trcal = self.slow_trcal
+        epcstd.modelParams.tari = self.slow_tari
+        epcstd.modelParams.rtcal = self.slow_rtcal
+        epcstd.modelParams.trcal = self.slow_trcal
         self.assertAlmostEqual(
             epcstd.get_reader_frame_duration(self.ack),
             self.slow_ack_frame.duration, 8)
@@ -695,9 +695,9 @@ class TestReaderFrameAccessors(unittest.TestCase):
         #
         # 1) Setting readerParams to fast frame type
         #
-        epcstd.readerParams.tari = self.fast_tari
-        epcstd.readerParams.rtcal = self.fast_rtcal
-        epcstd.readerParams.trcal = self.fast_trcal
+        epcstd.modelParams.tari = self.fast_tari
+        epcstd.modelParams.rtcal = self.fast_rtcal
+        epcstd.modelParams.trcal = self.fast_trcal
         self.assertAlmostEqual(
             epcstd.get_reader_frame_duration(self.ack),
             self.fast_ack_frame.duration, 8)
@@ -727,15 +727,15 @@ class TestTagFrameAccessors(unittest.TestCase):
                             reply, blf, preamble.encoding, preamble.extended),
                         frame.get_duration(blf), 8)
 
-    def test_get_tag_frame_duration_uses_default_params(self):
-        epcstd.readerParams.divide_ratio = epcstd.DivideRatio.DR_8
+    def test_get_tag_frame_duration_uses_default_modelParams(self):
+        epcstd.modelParams.divide_ratio = epcstd.DivideRatio.DR_8
         for preamble in self.preambles:
             for reply in self.replies:
                 for blf in self.blfs:
-                    epcstd.readerParams.trext = preamble.extended
-                    epcstd.readerParams.tag_encoding = preamble.encoding
-                    epcstd.readerParams.trcal = \
-                        epcstd.readerParams.divide_ratio.eval() / blf
+                    epcstd.modelParams.trext = preamble.extended
+                    epcstd.modelParams.tag_encoding = preamble.encoding
+                    epcstd.modelParams.trcal = \
+                        epcstd.modelParams.divide_ratio.eval() / blf
                     frame = epcstd.TagFrame(preamble, reply)
                     self.assertAlmostEqual(
                         epcstd.get_tag_frame_duration(reply),
@@ -808,14 +808,14 @@ class TestFrequencyToleranceEstimator(unittest.TestCase):
             intervals, epcstd.DivideRatio.DR_8, epcstd.TempRange.EXTENDED)
 
     def test_get_frt_uses_readerParams(self):
-        epcstd.readerParams.temp_range = epcstd.TempRange.NOMINAL
-        epcstd.readerParams.divide_ratio = epcstd.DivideRatio.DR_8
-        epcstd.readerParams.trcal = 31.25e-6
+        epcstd.modelParams.temp_range = epcstd.TempRange.NOMINAL
+        epcstd.modelParams.divide_ratio = epcstd.DivideRatio.DR_8
+        epcstd.modelParams.trcal = 31.25e-6
         self.assertAlmostEqual(epcstd.get_frt(), 0.10, 3)
 
-        epcstd.readerParams.temp_range = epcstd.TempRange.EXTENDED
-        epcstd.readerParams.divide_ratio = epcstd.DivideRatio.DR_643
-        epcstd.readerParams.trcal = 66.7e-6
+        epcstd.modelParams.temp_range = epcstd.TempRange.EXTENDED
+        epcstd.modelParams.divide_ratio = epcstd.DivideRatio.DR_643
+        epcstd.modelParams.trcal = 66.7e-6
         self.assertAlmostEqual(epcstd.get_frt(), 0.15, 3)
 
 
@@ -964,11 +964,11 @@ class TestLinkTimings(unittest.TestCase):
         return ts
 
     @staticmethod
-    def set_reader_params(rtcal, trcal, dr, temp):
-        epcstd.readerParams.rtcal = rtcal
-        epcstd.readerParams.trcal = trcal
-        epcstd.readerParams.divide_ratio = dr
-        epcstd.readerParams.temp_range = temp
+    def set_default_modelParams(rtcal, trcal, dr, temp):
+        epcstd.modelParams.rtcal = rtcal
+        epcstd.modelParams.trcal = trcal
+        epcstd.modelParams.divide_ratio = dr
+        epcstd.modelParams.temp_range = temp
 
     #
     # TESTS
@@ -983,12 +983,12 @@ class TestLinkTimings(unittest.TestCase):
             1.0 / self.fast_blf, 8)
 
     def test_get_pri_with_implicit_parameters_from_readerParams(self):
-        epcstd.readerParams.trcal = self.slow_trcal
-        epcstd.readerParams.divide_ratio = self.slow_dr
+        epcstd.modelParams.trcal = self.slow_trcal
+        epcstd.modelParams.divide_ratio = self.slow_dr
         self.assertAlmostEqual(epcstd.get_pri(), 1.0 / self.slow_blf, 8)
 
-        epcstd.readerParams.trcal = self.fast_trcal
-        epcstd.readerParams.divide_ratio = self.fast_dr
+        epcstd.modelParams.trcal = self.fast_trcal
+        epcstd.modelParams.divide_ratio = self.fast_dr
         self.assertAlmostEqual(epcstd.get_pri(), 1.0 / self.fast_blf, 8)
 
     def test_custom_get_tX_min_with_explicit_parameters(self):
@@ -1015,10 +1015,10 @@ class TestLinkTimings(unittest.TestCase):
                 actual_timeouts[key], self.expected_timeouts[key].t_max,
                 prefix=key, suffix="max")
 
-    def test_custom_get_tX_with_implicit_parameters_from_readerParams(self):
+    def test_custom_get_tX_with_implicit_parameters_from_modelParams(self):
         # Setting up slow link parameters
-        self.set_reader_params(self.slow_rtcal, self.slow_trcal, self.slow_dr,
-                               self.temp)
+        self.set_default_modelParams(self.slow_rtcal, self.slow_trcal,
+                                     self.slow_dr, self.temp)
         t_min = self.build_t_min()  # leaving all parameters None
         t_max = self.build_t_max()  # leaving all parameters None
         self.assertTimeoutsEqual(t_min, self.expected_timeouts["slow"].t_min,
@@ -1027,8 +1027,8 @@ class TestLinkTimings(unittest.TestCase):
                                  prefix="default slow", suffix="max")
 
         # Setting up fast link parameters
-        self.set_reader_params(self.fast_rtcal, self.fast_trcal, self.fast_dr,
-                               self.temp)
+        self.set_default_modelParams(self.fast_rtcal, self.fast_trcal,
+                                     self.fast_dr, self.temp)
         t_min = self.build_t_min()  # leaving all parameters None
         t_max = self.build_t_max()  # leaving all parameters None
         self.assertTimeoutsEqual(t_min, self.expected_timeouts["fast"].t_min,
@@ -1069,89 +1069,45 @@ class TestLinkTimings(unittest.TestCase):
                 actual_timeouts[key], self.expected_timeouts[key].t_max,
                 num_digits=8, prefix=key, suffix="max")
 
+        self.assertAlmostEqual(
+            epcstd.get_t_max(3, self.slow_rtcal, self.slow_trcal, self.slow_dr,
+                             self.temp), float('inf'))
+
         # Check that get_t_max works for n=1..7, n != 3 only
         with self.assertRaises(ValueError):
-            epcstd.get_t_max(3, self.slow_rtcal, self.slow_trcal, self.slow_dr,
-                             self.temp)
             epcstd.get_t_max(0, self.slow_rtcal, self.slow_trcal, self.slow_dr,
                              self.temp)
             epcstd.get_t_max(8, self.slow_rtcal, self.slow_trcal, self.slow_dr,
                              self.temp)
 
-    def test_universal_get_t_min_with_parameters_from_readerParams(self):
+    def test_universal_get_t_min_with_parameters_from_modelParams(self):
         # Setting up slow parameters
-        self.set_reader_params(self.slow_rtcal, self.slow_trcal, self.slow_dr,
-                               self.temp)
+        self.set_default_modelParams(self.slow_rtcal, self.slow_trcal,
+                                     self.slow_dr, self.temp)
         slow = self.build_t_min_with_universal_getter()
         self.assertTimeoutsEqual(slow, self.expected_timeouts["slow"].t_min,
                                  prefix="slow", suffix="min")
 
         # Setting up fast parameters
-        self.set_reader_params(self.fast_rtcal, self.fast_trcal, self.fast_dr,
-                               self.temp)
+        self.set_default_modelParams(self.fast_rtcal, self.fast_trcal,
+                                     self.fast_dr, self.temp)
         fast = self.build_t_min_with_universal_getter()
         self.assertTimeoutsEqual(fast, self.expected_timeouts['fast'].t_min,
                                  prefix="fast", suffix="min")
 
-    def test_universal_get_t_max_with_parameters_from_readerParams(self):
+    def test_universal_get_t_max_with_parameters_from_modelParams(self):
         # Setting up slow parameters
-        self.set_reader_params(self.slow_rtcal, self.slow_trcal, self.slow_dr,
-                               self.temp)
+        self.set_default_modelParams(self.slow_rtcal, self.slow_trcal,
+                                     self.slow_dr, self.temp)
         slow = self.build_t_max_with_universal_getter()
         self.assertTimeoutsEqual(slow, self.expected_timeouts["slow"].t_max,
                                  prefix="slow", suffix="max")
 
         # Setting up fast parameters
-        self.set_reader_params(self.fast_rtcal, self.fast_trcal, self.fast_dr,
-                               self.temp)
+        self.set_default_modelParams(self.fast_rtcal, self.fast_trcal,
+                                     self.fast_dr, self.temp)
         fast = self.build_t_max_with_universal_getter()
         self.assertTimeoutsEqual(fast, self.expected_timeouts['fast'].t_max,
                                  prefix="fast", suffix="max")
 
-
-class TestSlotEstimator(unittest.TestCase):
-    def setUp(self):
-        self.params = {
-            "slow": {
-                "tari": 25.0e-6,
-                "rtcal": 75.0e-6,
-                "trcal": 225.0e-6,
-                "dr": epcstd.DivideRatio.DR_8,
-                "encoding": epcstd.TagEncoding.M8
-            },
-            "fast": {
-                "tari": 6.25e-6,
-                "rtcal": 15.625e-6,
-                "trcal": 17.1875e-6,
-                "dr": epcstd.DivideRatio.DR_8,
-                "encoding": epcstd.TagEncoding.M8
-            }
-        }
-
-    def build_explicit_estimators(self):
-        slow = self.params["slow"]
-        fast = self.params["fast"]
-        return {
-            "slow": epcstd.SlotEstimator(
-                tari=slow["tari"], rtcal=slow["rtcal"], trcal=slow["trcal"],
-                dr=slow["dr"], encoding=slow["encoding"]),
-            "fast": epcstd.SlotEstimator(
-                tari=fast["tari"], rtcal=fast["rtcal"], trcal=fast["trcal"],
-                dr=fast["dr"], encoding=fast["encoding"]),
-        }
-
-    def test_slot_estimator_creation(self):
-        slot = epcstd.SlotEstimator()
-        self.assertIsNotNone(slot.get_empty_duration(first=True))
-        self.assertIsNotNone(slot.get_collided_duration(first=True))
-        self.assertIsNotNone(slot.get_normal_duration(
-            first=True, access_ops=[]))
-
-    def test_slot_estimator_get_empty_duration(self):
-        estimators = self.build_explicit_estimators()
-
-        self.assertAlmostEqual(
-            estimators['slow'].get_empty_duration(first=True),
-            0.0
-        )
 

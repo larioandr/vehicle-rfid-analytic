@@ -1111,3 +1111,57 @@ class TestLinkTimings(unittest.TestCase):
                                  prefix="fast", suffix="max")
 
 
+class TestElementaryTimings(unittest.TestCase):
+    def setUp(self):
+        self.fast_tari = 6.25e-6
+        self.fast_rtcal = 15.625e-6
+        self.fast_trcal = 17.875e-6
+        self.fast_trext = False
+        self.fast_temp = epcstd.TempRange.NOMINAL
+        self.fast_q = 4
+        self.fast_dr = epcstd.DivideRatio.DR_643
+        self.fast_m = epcstd.TagEncoding.FM0
+        self.fast_target = epcstd.InventoryFlag.A
+        self.fast_sel = epcstd.SelFlag.ALL
+        self.fast_session = epcstd.Session.S0
+        self.fast_bank = epcstd.MemoryBank.TID
+        self.fast_word_ptr = 0
+        self.fast_word_count = 4
+        self.fast_data = "89ABCDEF"
+        self.fast_epc = "00112233445566778899AABB"
+        self.fast_pc = 0x0000
+        self.fast_rn = 0x0000
+        self.fast_crc = 0x0000
+        self.fast_t = {
+            "Query": 199.125e-6,
+            "QueryRep": 59.375e-6,
+            "ACK": 150.0e-6,
+            "ReqRN": 293.75e-6,
+            "Read": 412.5e-6,
+            "T1(min)": 11.28125e-6,
+            "T1(max)": 19.96875e-6,
+            "T2(min)": 2.51367188e-6,
+            "T2(max)": 16.7578125e-6,
+            "T3(min)": 0.0e-6,
+            "T3(max)": float("inf"),
+            "T4(min)": 31.25e-6,
+            "T4(max)": float("inf"),
+            "RN16": 19.27148438e-6,
+            "Response": 113.11523438e-6,
+            "Handle": 32.67773438e-6,
+            "Data": 60.328125e-6
+        }
+
+    def test_get_elementary_timings(self):
+        d = epcstd.get_elementary_timings(
+            tari=self.fast_tari, rtcal=self.fast_rtcal, trcal=self.fast_trcal,
+            temp=self.fast_temp, dr=epcstd.DivideRatio.DR_643,
+            m=self.fast_m, trext=self.fast_trext, sel=self.fast_sel,
+            session=self.fast_session, target=self.fast_target, q=self.fast_q,
+            bank=self.fast_bank, word_ptr=self.fast_word_ptr,
+            word_count=self.fast_word_count, rn=self.fast_rn,
+            crc=self.fast_crc, epc=self.fast_epc, mem=self.fast_data,
+            pc=self.fast_pc)
+        for k, v in self.fast_t.items():
+            self.assertIn(k, d, "key {} not found in timings".format(k))
+            self.assertAlmostEqual(v, d[k], 8, "error in {}".format(k))

@@ -1,5 +1,7 @@
 from enum import Enum
+import random
 import collections
+import numpy as np
 
 
 #
@@ -202,35 +204,29 @@ class ModelParams:
     read_default_word_count = 4  # FIXME: check this!
     temp_range = TempRange.NOMINAL
     access_ops = []  # this list contains reader commands for tag access
-
-    tags = []
-
-
-class Reader:
-    tari = 6.25e-6
-    rtcal = 1.5625e-05
-    trcal = 3.125e-05
-    delim = 12.5e-6
-    Q = 4
-    divide_ratio = DivideRatio.DR_8
-    tag_encoding = TagEncoding.FM0
-    sel = SelFlag.ALL
-    session = Session.S0
-    target = InventoryFlag.A
-    trext = False
-    access_ops = []
-
-
-class Tag:
-    epc = "000102030405060708090A0B"
-    tid = "1011121314151617"
-    height = None
-    direction = None
-    gain = 8.0
+    default_epc = "FF" * 12
+    default_read_data = "FF" * 8
 
 
 modelParams = ModelParams()
-# readerParams = ReaderParams()
+
+
+#
+#######################################################################
+# Tag Operations
+#######################################################################
+#
+class TagOp:
+    pass
+
+
+class TagReadOp(TagOp):
+    bank = MemoryBank.TID
+    word_ptr = 0
+    word_count = 0
+
+    def __init__(self):
+        super().__init__()
 
 
 #
@@ -378,18 +374,31 @@ class Read(Command):
 # Tag replies
 #######################################################################
 #
+class ReplyType(Enum):
+    QUERY_REPLY = 0
+    ACK_REPLY = 1
+    REQRN_REPLY = 2
+    READ_REPLY = 3
+
+
 class Reply:
-    def __init__(self):
+    def __init__(self, reply_type):
         super().__init__()
+        self.__type = reply_type
 
     @property
     def bitlen(self):
         raise NotImplementedError()
 
+    @property
+    def reply_type(self):
+        return self.__type
+
+
 
 class QueryReply(Reply):
     def __init__(self, rn=0x0000):
-        super().__init__()
+        super().__init__(ReplyType.QUERY_REPLY)
         self.rn = rn
 
     @property
@@ -415,7 +424,7 @@ def to_bytes(value):
 
 class AckReply(Reply):
     def __init__(self, epc="", pc=0x0000, crc=0x0000):
-        super().__init__()
+        super().__init__(ReplyType.ACK_REPLY)
         self._data = to_bytes(epc)
         self.pc = pc
         self.crc = crc
@@ -439,7 +448,7 @@ class AckReply(Reply):
 
 class ReqRnReply(Reply):
     def __init__(self, rn=0x0000, crc=0x0000):
-        super().__init__()
+        super().__init__(ReplyType.REQRN_REPLY)
         self.rn = rn
         self.crc = crc
 
@@ -453,7 +462,7 @@ class ReqRnReply(Reply):
 
 class ReadReply(Reply):
     def __init__(self, data="", rn=0x0000, crc=0x0000, header=False):
-        super().__init__()
+        super().__init__(ReplyType.READ_REPLY)
         self.rn = rn
         self.crc = crc
         self.header = header
@@ -643,12 +652,29 @@ class TagFrame:
         return "Frame{{{o.preamble}{o.reply}}}".format(o=self)
 
 
+# TODO: not tested
+# FIXME: not vectorized
+def tag_preamble_bitlen(encoding=None, trext=None):
+    encoding = encoding if encoding is not None else modelParams.tag_encoding
+    trext = trext if trext is not None else modelParams.trext
+    if encoding is TagEncoding.FM0:
+        return 18 if trext else 6
+    else:
+        return 22 if trext else 10
+
+
+# TODO: not tested
+def tag_preamble_duration(blf=None, encoding=None, trext=None):
+    blf = blf if blf is not None else get_blf()
+    bitlen = tag_preamble_bitlen(encoding, trext)
+    return bitlen / blf
+
+
 #
 #######################################################################
 # Reader and Tag frames helpers and accessors
 #######################################################################
 #
-
 def get_reader_frame_duration(command, tari=None, rtcal=None, trcal=None,
                               delim=None):
     tari = tari if tari is not None else modelParams.tari
@@ -676,6 +702,110 @@ def get_tag_frame_duration(reply, blf=None, encoding=None, trext=None):
     return frame.get_duration(blf)
 
 
+# TODO: no test
+def command_duration(code,
+                     tari=None, rtcal=None, trcal=None, delim=None, dr=None,
+                     m=None, trext=None, sel=None, session=None, target=None,
+                     q=None, rn=None, bank=None, word_ptr=None,
+                     word_count=None, crc5=0, crc16=0):
+    if code is CommandCode.QUERY:
+        return query_duration(tari, rtcal, trcal, delim, dr, m, trext, sel,
+                              session, target, q, crc5)
+    elif code is CommandCode.QUERY_REP:
+        return query_rep_duration(tari, rtcal, trcal, delim, session)
+    elif code is CommandCode.ACK:
+        return ack_duration(tari, rtcal, trcal, delim, rn)
+    elif code is CommandCode.REQ_RN:
+        return reqrn_duration(tari, rtcal, trcal, delim, rn, crc16)
+    elif code is CommandCode.READ:
+        return read_duration(tari, rtcal, trcal, delim, bank, word_ptr,
+                             word_count, rn, crc16)
+    else:
+        raise ValueError("unrecognized command code = {}".format(code))
+
+
+# TODO: no test
+# noinspection PyTypeChecker
+def query_duration(tari=None, rtcal=None, trcal=None, delim=None, dr=None,
+                   m=None, trext=None, sel=None, session=None, target=None,
+                   q=None, crc=0x00):
+    return get_reader_frame_duration(Query(dr, m, trext, sel, session, target,
+                                           q, crc), tari, rtcal, trcal, delim)
+
+
+# TODO: no test
+# noinspection PyTypeChecker
+def query_rep_duration(tari=None, rtcal=None, trcal=None, delim=None,
+                       session=None):
+    return get_reader_frame_duration(QueryRep(session), tari, rtcal, trcal,
+                                     delim)
+
+
+# TODO: no test
+# noinspection PyTypeChecker
+def ack_duration(tari=None, rtcal=None, trcal=None, delim=None, rn=None):
+    return get_reader_frame_duration(Ack(rn), tari, rtcal, trcal, delim)
+
+
+# TODO: no test
+# noinspection PyTypeChecker
+def reqrn_duration(tari=None, rtcal=None, trcal=None, delim=None, rn=None,
+                   crc=0):
+    return get_reader_frame_duration(ReqRN(rn, crc), tari, rtcal, trcal, delim)
+
+
+# TODO: no test
+# noinspection PyTypeChecker
+def read_duration(tari=None, rtcal=None, trcal=None, delim=None, bank=None,
+                  word_ptr=None, word_count=None, rn=None, crc=0x00):
+    return get_reader_frame_duration(Read(bank, word_ptr, word_count, rn, crc),
+                                     tari, rtcal, trcal, delim)
+
+
+# TODO: no test
+def reply_duration(reply_type, dr=None, trcal=None, encoding=None, trext=None,
+                   epc=None, words_count=None):
+    if reply_type is ReplyType.QUERY_REPLY:
+        return query_reply_duration(dr, trcal, encoding, trext)
+    elif reply_type is ReplyType.ACK_REPLY:
+        return ack_reply_duration(dr, trcal, encoding, trext, epc)
+    elif reply_type is ReplyType.REQRN_REPLY:
+        return reqrn_reply_duration(dr, trcal, encoding, trext)
+    elif reply_type is ReplyType.READ_REPLY:
+        return read_reply_duration(dr, trcal, encoding, trext, words_count)
+    else:
+        raise ValueError("unrecognized reply type = {}".format(reply_type))
+
+
+def __reply_duration(bs=0, dr=None, trcal=None, encoding=None, trext=None):
+    bitrate = get_tag_bitrate(dr, trcal, encoding)
+    preamble_bs = tag_preamble_bitlen(encoding, trext)
+    suffix_bs = 1
+    return (preamble_bs + bs + suffix_bs) / bitrate
+
+
+# TODO: no test
+def query_reply_duration(dr=None, trcal=None, encoding=None, trext=None):
+    return __reply_duration(16, dr, trcal, encoding, trext)
+
+
+# TODO: no test
+def ack_reply_duration(dr=None, trcal=None, encoding=None, trext=None,
+                       epc=None):
+    return __reply_duration(32 + len(epc) * 8, dr, trcal, encoding, trext)
+
+
+# TODO: no test
+def reqrn_reply_duration(dr=None, trcal=None, encoding=None, trext=None):
+    return __reply_duration(16, dr, trcal, encoding, trext)
+
+
+# TODO: no test
+def read_reply_duration(dr=None, trcal=None, encoding=None, trext=None,
+                        words_count=None):
+    return __reply_duration(words_count * 16 + 33, dr, trcal, encoding, trext)
+
+
 #
 #######################################################################
 # Link timings estimation
@@ -685,6 +815,11 @@ def get_blf(dr=None, trcal=None):
     dr = dr if dr is not None else modelParams.divide_ratio
     trcal = trcal if trcal is not None else modelParams.trcal
     return dr.eval() / trcal
+
+
+def get_tag_bitrate(dr=None, trcal=None, encoding=None):
+    blf = get_blf(dr, trcal)
+    return blf / encoding.symbols_per_bit
 
 
 def get_frt(trcal=None, dr=None, temp_range=None):
@@ -721,147 +856,227 @@ def get_pri(trcal=None, dr=None):
     return trcal / dr.eval()
 
 
-def get_t_min(n, rtcal=None, trcal=None, dr=None, temp=None):
+def min_link_t(param_index, rtcal=None, trcal=None, dr=None, temp=None):
     rtcal = rtcal if rtcal is not None else modelParams.rtcal
     trcal = trcal if trcal is not None else modelParams.trcal
     dr = dr if dr is not None else modelParams.divide_ratio
     temp = temp if temp is not None else modelParams.temp_range
-    if n in [1, 5, 6]:
-        pri = get_pri(trcal, dr)
-        frt = get_frt(trcal, dr, temp)
-        return max(rtcal, pri * 10.0) * (1.0 - frt) - 2e-6
-    elif n == 2:
-        return 3.0 * get_pri(trcal, dr)
-    elif n == 3:
-        return 0.0
-    elif n == 4:
-        return 2.0 * rtcal
-    elif n == 7:
-        return max(get_t2_max(trcal, dr), 250e-6)
+    if param_index is not None:
+        if param_index in [1, 5, 6]:
+            pri = get_pri(trcal, dr)
+            frt = get_frt(trcal, dr, temp)
+            return max(rtcal, pri * 10.0) * (1.0 - frt) - 2e-6
+        elif param_index == 2:
+            return 3.0 * get_pri(trcal, dr)
+        elif param_index == 3:
+            return 0.0
+        elif param_index == 4:
+            return 2.0 * rtcal
+        elif param_index == 7:
+            return max(link_t2_max(trcal, dr), 250e-6)
+        else:
+            raise ValueError("1 <= n <= 7, but n={} found".format(param_index))
     else:
-        raise ValueError("1 <= n <= 7, but n={} found".format(n))
+        return [min_link_t(n, rtcal, trcal, dr, temp) for n in range(1, 8)]
 
 
-def get_t_max(n, rtcal=None, trcal=None, dr=None, temp=None):
+def max_link_t(param_index, rtcal=None, trcal=None, dr=None, temp=None):
     rtcal = rtcal if rtcal is not None else modelParams.rtcal
     trcal = trcal if trcal is not None else modelParams.trcal
     dr = dr if dr is not None else modelParams.divide_ratio
     temp = temp if temp is not None else modelParams.temp_range
-    if n == 1:
-        pri = get_pri(trcal, dr)
-        frt = get_frt(trcal, dr, temp)
-        return max(rtcal, pri * 10.0) * (1.0 + frt) + 2e-6
-    elif n == 2:
-        return 20.0 * get_pri(trcal, dr)
-    elif 5 <= n <= 7:
-        return 0.02
-    elif n == 3 or n == 4:
-        return float('inf')
+    if param_index is not None:
+        if param_index == 1:
+            pri = get_pri(trcal, dr)
+            frt = get_frt(trcal, dr, temp)
+            return max(rtcal, pri * 10.0) * (1.0 + frt) + 2e-6
+        elif param_index == 2:
+            return 20.0 * get_pri(trcal, dr)
+        elif 5 <= param_index <= 7:
+            return 0.02
+        elif param_index == 3 or param_index == 4:
+            return float('inf')
+        else:
+            raise ValueError("1 <= param_index <= 7, but param_index={} found"
+                             "".format(param_index))
     else:
-        raise ValueError("1 <= n <= 7, but n={} found".format(n))
+        return [max_link_t(n, rtcal, trcal, dr, temp) for n in range(1, 8)]
 
 
-def get_t(n=None, rtcal=None, trcal=None, dr=None, temp=None):
-    if n is None:
-        return [get_t(n, rtcal, trcal, dr, temp) for n in range(1, 8)]
+def link_t(param_index=None, rtcal=None, trcal=None, dr=None, temp=None):
+    if param_index is None:
+        return [link_t(n, rtcal, trcal, dr, temp) for n in range(1, 8)]
     else:
-        return (get_t_min(n, rtcal, trcal, dr, temp),
-                get_t_max(n, rtcal, trcal, dr, temp))
+        return (min_link_t(param_index, rtcal, trcal, dr, temp),
+                max_link_t(param_index, rtcal, trcal, dr, temp))
 
 
-def get_t1_min(rtcal=None, trcal=None, dr=None, temp=None):
-    return get_t_min(1, rtcal, trcal, dr, temp)
+def link_t1_min(rtcal=None, trcal=None, dr=None, temp=None):
+    return min_link_t(1, rtcal, trcal, dr, temp)
 
 
-def get_t1_max(rtcal=None, trcal=None, dr=None, temp=None):
-    return get_t_max(1, rtcal, trcal, dr, temp)
+def link_t1_max(rtcal=None, trcal=None, dr=None, temp=None):
+    return max_link_t(1, rtcal, trcal, dr, temp)
 
 
-def get_t2_min(trcal=None, dr=None):
-    return get_t_min(2, trcal=trcal, dr=dr)
+def link_t2_min(trcal=None, dr=None):
+    return min_link_t(2, trcal=trcal, dr=dr)
 
 
-def get_t2_max(trcal=None, dr=None):
-    return get_t_max(2, trcal=trcal, dr=dr)
+def link_t2_max(trcal=None, dr=None):
+    return max_link_t(2, trcal=trcal, dr=dr)
 
 
-def get_t3_min():
-    return get_t_min(3)
+def link_t3():
+    return min_link_t(3)
 
 
-def get_t4_min(rtcal=None):
-    return get_t_min(4, rtcal=rtcal)
+def link_t4(rtcal=None):
+    return min_link_t(4, rtcal=rtcal)
 
 
-def get_t5_min(rtcal=None, trcal=None, dr=None, temp=None):
-    return get_t_min(1, rtcal, trcal, dr, temp)
+def link_t5_min(rtcal=None, trcal=None, dr=None, temp=None):
+    return min_link_t(1, rtcal, trcal, dr, temp)
 
 
-def get_t5_max():
-    return get_t_max(5)
+def link_t5_max():
+    return max_link_t(5)
 
 
-def get_t6_min(rtcal=None, trcal=None, dr=None, temp=None):
-    return get_t_min(1, rtcal, trcal, dr, temp)
+def link_t6_min(rtcal=None, trcal=None, dr=None, temp=None):
+    return min_link_t(1, rtcal, trcal, dr, temp)
 
 
-def get_t6_max():
-    return get_t_max(6)
+def link_t6_max():
+    return max_link_t(6)
 
 
-def get_t7_min(trcal=None, dr=None):
-    return get_t_min(7, trcal=trcal, dr=dr)
+def link_t7_min(trcal=None, dr=None):
+    return min_link_t(7, trcal=trcal, dr=dr)
 
 
-def get_t7_max():
-    return get_t_max(7)
+def link_t7_max():
+    return max_link_t(7)
 
 
 #
 #######################################################################
-# Duration estimators
+# Slot duration estimation
 #######################################################################
 #
-class SlotDurationEstimator:
+class SlotType(Enum):
+    EMPTY = 0
+    COLLISION = 1
+    INVENTORY = 2
+    ACCESS = 3
 
-    __allowed = ('tari', 'rtcal', 'trcal', 'delim', 'dr', 'session', 'sl', 'q',
-                 'target', 'trext', 'tagops')
 
-    def __init__(self, **kwargs):
-        for field in self.__allowed:
-            setattr(self, field, None)
-        for key, value in kwargs.items():
-            if key not in self.__allowed:
-                raise ValueError("unsupported parameter {}".format(key))
-            setattr(self, key, value)
+def slot_duration(slot_type, access_ops=None, tari=None, rtcal=None,
+                  trcal=None, delim=None, dr=None, temp=None, m=None,
+                  trext=None, sel=None, session=None, target=None, q=None,
+                  rn=None, epc=None, crc5=None, crc16=None, is_first=False):
+    rn = rn if rn is not None else random.randint(0x0000, 0xFFFF)
 
-    def _get(self, name, args):
-        if name in args:
-            return args[name]
-        elif name in self.__dict__:
-            value = self.__dict__[name]
-            if value is None:
-                if name in modelParams.__dict__:
-                    value = modelParams.__dict__[name]
-                elif name in ModelParams.__dict__:
-                    value = ModelParams.__dict__[name]
-            return value
+    t4 = link_t4(rtcal)
+    if is_first:
+        t_query = query_duration(tari, rtcal, trcal, delim, dr, m, trext, sel,
+                                 session, target, q, crc5)
+    else:
+        t_query = query_rep_duration(tari, rtcal, trcal, delim, session)
 
-    def get_empty_slot_duration(self, **kwargs):
-        pass
+    if slot_type is SlotType.EMPTY:
+        t1 = link_t1_max(rtcal, trcal, dr, temp)
+        t3 = link_t3()
+        return t_query + np.maximum(t1 + t3, t4)
 
-    def get_collided_slot_duration(self, **kwargs):
-        pass
+    t1_min = link_t1_min(rtcal, trcal, dr, temp)
+    t2 = link_t2_min(trcal, dr)
+    t_rn16 = query_reply_duration(dr, trcal, m, trext)
 
-    def get_responded_slot_duration(self, **kwargs):
-        pass
+    t_inventory_rn16 = t_query + np.maximum(t1_min + t_rn16 + t2, t4)
+    if slot_type is SlotType.COLLISION:
+        return t_inventory_rn16
 
+    t_ack = ack_duration(tari, rtcal, trcal, delim, rn)
+    t_ack_reply = ack_reply_duration(dr, trcal, m, trext, epc)
+    t_inventory = (t_inventory_rn16 + t_ack +
+                   np.maximum(t1_min + t_ack_reply + t2, t4))
+
+    if slot_type is SlotType.INVENTORY or (
+                    slot_type is SlotType.ACCESS and access_ops is None):
+        return t_inventory
+
+    assert slot_type is SlotType.ACCESS
+    # From here on, assume that slot_type is ACCESS
+
+    t_access = 0
+    for op in access_ops:
+        if isinstance(op, TagReadOp):
+            t_read_cmd = read_duration(tari, rtcal, trcal, delim, op.bank,
+                                       op.word_ptr, op.word_count, rn, crc16)
+            t_read_reply = read_reply_duration(dr, trcal, m, trext,
+                                               op.word_count)
+            t_access += np.maximum(t_read_cmd + t1_min + t_read_reply + t2, t4)
+        else:
+            raise ValueError("unrecognized tag operation = {}".format(op))
+
+    return t_inventory + t_access
+
+
+def slot_duration_min(slot_type, access_ops=None, tari=None, rtcal=None,
+                      trcal=None, delim=None, dr=None, temp=None, epc=None,
+                      is_first=False):
+    return slot_duration(
+        slot_type, access_ops, tari, rtcal, trcal, delim, dr, temp,
+        m=TagEncoding.FM0, trext=False, sel=SelFlag.ALL, session=Session.S0,
+        target=InventoryFlag.A, q=0, rn=0, epc=epc, crc5=0, crc16=0,
+        is_first=is_first)
+
+
+def slot_duration_max(slot_type, access_ops=None, tari=None, rtcal=None,
+                      trcal=None, delim=None, dr=None, temp=None, epc=None,
+                      is_first=False):
+    return slot_duration(
+        slot_type, access_ops, tari, rtcal, trcal, delim, dr, temp,
+        m=TagEncoding.M8, trext=True, sel=SelFlag.SEL, session=Session.S3,
+        target=InventoryFlag.B, q=15, rn=0xFFFF, epc=epc, crc5=0x1F,
+        crc16=0xFFFF, is_first=is_first)
+
+
+#
+#######################################################################
+# Round duration estimation
+#######################################################################
+#
+def estimate_inventory_round():
+    pass
+
+
+def estimate_inventory_round_min():
+    pass
+
+
+def estimate_inventory_round_max():
+    pass
+
+
+def estimate_inventory_round_pmf():
+    pass
+
+
+#
+#######################################################################
+#
+#######################################################################
+#
 
 #
 #######################################################################
 # Various helpers
 #######################################################################
 #
+
+
 # noinspection PyTypeChecker
 def get_elementary_timings(tari=None, rtcal=None, trcal=None, delim=None,
                            temp=None, dr=None, m=None, trext=None, sel=None,
@@ -927,7 +1142,7 @@ def get_elementary_timings(tari=None, rtcal=None, trcal=None, delim=None,
     }
 
     for timer_index in range(1, 8):
-        t = get_t(timer_index, rtcal=rtcal, trcal=trcal, dr=dr, temp=temp)
+        t = link_t(timer_index, rtcal=rtcal, trcal=trcal, dr=dr, temp=temp)
         ret["T{}(min)".format(timer_index)] = t[0]
         ret["T{}(max)".format(timer_index)] = t[1]
 

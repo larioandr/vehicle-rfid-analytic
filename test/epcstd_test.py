@@ -479,6 +479,56 @@ class TestTagPreambles(unittest.TestCase):
         self.assertNotIn("0x", s1)
         self.assertNotIn("0x", s2)
 
+    def test_tag_preamble_bitlen(self):
+        fm0_normal = epcstd.create_tag_preamble(epcstd.TagEncoding.FM0, False)
+        fm0_extended = epcstd.create_tag_preamble(epcstd.TagEncoding.FM0, True)
+        m2_normal = epcstd.create_tag_preamble(epcstd.TagEncoding.M2, False)
+        m2_extended = epcstd.create_tag_preamble(epcstd.TagEncoding.M2, True)
+
+        self.assertEqual(fm0_normal.bitlen, epcstd.tag_preamble_bitlen(
+            epcstd.TagEncoding.FM0))
+        self.assertEqual(fm0_extended.bitlen, epcstd.tag_preamble_bitlen(
+            epcstd.TagEncoding.FM0, True))
+        self.assertEqual(m2_normal.bitlen, epcstd.tag_preamble_bitlen(
+            epcstd.TagEncoding.M2))
+        self.assertEqual(m2_extended.bitlen, epcstd.tag_preamble_bitlen(
+            epcstd.TagEncoding.M2, True))
+
+    def test_tag_preamble_duration(self):
+        fm0_normal = epcstd.create_tag_preamble(epcstd.TagEncoding.FM0, False)
+        fm0_extended = epcstd.create_tag_preamble(epcstd.TagEncoding.FM0, True)
+        m2_normal = epcstd.create_tag_preamble(epcstd.TagEncoding.M2, False)
+        m2_extended = epcstd.create_tag_preamble(epcstd.TagEncoding.M2, True)
+
+        blf_slow = epcstd.get_blf(epcstd.DivideRatio.DR_8, 25.0e-6*9)
+        blf_fast = epcstd.get_blf(epcstd.DivideRatio.DR_643, 6.25e-6 * 9)
+
+        self.assertEqual(
+            fm0_normal.get_duration(blf_slow), epcstd.tag_preamble_duration(
+                blf_slow, epcstd.TagEncoding.FM0, False))
+        self.assertEqual(
+            fm0_normal.get_duration(blf_fast), epcstd.tag_preamble_duration(
+                blf_fast, epcstd.TagEncoding.FM0, False))
+        self.assertEqual(
+            fm0_extended.get_duration(blf_slow), epcstd.tag_preamble_duration(
+                blf_slow, epcstd.TagEncoding.FM0, True))
+        self.assertEqual(
+            fm0_extended.get_duration(blf_fast), epcstd.tag_preamble_duration(
+                blf_fast, epcstd.TagEncoding.FM0, True))
+
+        self.assertEqual(
+            m2_normal.get_duration(blf_slow), epcstd.tag_preamble_duration(
+                blf_slow, epcstd.TagEncoding.M2, False))
+        self.assertEqual(
+            m2_normal.get_duration(blf_fast), epcstd.tag_preamble_duration(
+                blf_fast, epcstd.TagEncoding.M2, False))
+        self.assertEqual(
+            m2_extended.get_duration(blf_slow), epcstd.tag_preamble_duration(
+                blf_slow, epcstd.TagEncoding.M2, True))
+        self.assertEqual(
+            m2_extended.get_duration(blf_fast), epcstd.tag_preamble_duration(
+                blf_fast, epcstd.TagEncoding.M2, True))
+
 
 class TestReaderFrames(unittest.TestCase):
     def setUp(self):
@@ -929,38 +979,38 @@ class TestLinkTimings(unittest.TestCase):
 
     def build_t_min(self, rtcal=None, trcal=None, dr=None, temp=None):
         ts = self.Timeouts()
-        ts.t1 = epcstd.get_t1_min(rtcal=rtcal, trcal=trcal, dr=dr, temp=temp)
-        ts.t2 = epcstd.get_t2_min(trcal=trcal, dr=dr)
-        ts.t3 = epcstd.get_t3_min()
-        ts.t4 = epcstd.get_t4_min(rtcal=rtcal)
-        ts.t5 = epcstd.get_t5_min(rtcal=rtcal, trcal=trcal, dr=dr, temp=temp)
-        ts.t6 = epcstd.get_t6_min(rtcal=rtcal, trcal=trcal, dr=dr, temp=temp)
-        ts.t7 = epcstd.get_t7_min(trcal=trcal, dr=dr)
+        ts.t1 = epcstd.link_t1_min(rtcal=rtcal, trcal=trcal, dr=dr, temp=temp)
+        ts.t2 = epcstd.link_t2_min(trcal=trcal, dr=dr)
+        ts.t3 = epcstd.link_t3()
+        ts.t4 = epcstd.link_t4(rtcal=rtcal)
+        ts.t5 = epcstd.link_t5_min(rtcal=rtcal, trcal=trcal, dr=dr, temp=temp)
+        ts.t6 = epcstd.link_t6_min(rtcal=rtcal, trcal=trcal, dr=dr, temp=temp)
+        ts.t7 = epcstd.link_t7_min(trcal=trcal, dr=dr)
         return ts
 
     def build_t_max(self, rtcal=None, trcal=None, dr=None, temp=None):
         ts = self.Timeouts()
-        ts.t1 = epcstd.get_t1_max(rtcal=rtcal, trcal=trcal, dr=dr, temp=temp)
-        ts.t2 = epcstd.get_t2_max(trcal=trcal, dr=dr)
-        ts.t5 = epcstd.get_t5_max()
-        ts.t6 = epcstd.get_t6_max()
-        ts.t7 = epcstd.get_t7_max()
+        ts.t1 = epcstd.link_t1_max(rtcal=rtcal, trcal=trcal, dr=dr, temp=temp)
+        ts.t2 = epcstd.link_t2_max(trcal=trcal, dr=dr)
+        ts.t5 = epcstd.link_t5_max()
+        ts.t6 = epcstd.link_t6_max()
+        ts.t7 = epcstd.link_t7_max()
         return ts
 
     def build_t_min_with_universal_getter(
             self, rtcal=None, trcal=None, dr=None, temp=None):
         ts = self.Timeouts()
         for i in range(1, 8):
-            ts[i] = epcstd.get_t_min(i, rtcal=rtcal, trcal=trcal, dr=dr,
-                                     temp=temp)
+            ts[i] = epcstd.min_link_t(i, rtcal=rtcal, trcal=trcal, dr=dr,
+                                      temp=temp)
         return ts
 
     def build_t_max_with_universal_getter(
             self, rtcal=None, trcal=None, dr=None, temp=None):
         ts = self.Timeouts()
         for i in [1, 2, 5, 6, 7]:
-            ts[i] = epcstd.get_t_max(i, rtcal=rtcal, trcal=trcal, dr=dr,
-                                     temp=temp)
+            ts[i] = epcstd.max_link_t(i, rtcal=rtcal, trcal=trcal, dr=dr,
+                                      temp=temp)
         return ts
 
     @staticmethod
@@ -1051,9 +1101,9 @@ class TestLinkTimings(unittest.TestCase):
 
         # Check that get_t_min works for n=1..7 only
         with self.assertRaises(ValueError):
-            epcstd.get_t_min(
+            epcstd.min_link_t(
                 0, self.slow_rtcal, self.slow_trcal, self.slow_dr, self.temp)
-            epcstd.get_t_min(
+            epcstd.min_link_t(
                 8, self.slow_rtcal, self.slow_trcal, self.slow_dr, self.temp)
 
     def test_universal_get_t_max_with_explicit_parameters(self):
@@ -1070,15 +1120,15 @@ class TestLinkTimings(unittest.TestCase):
                 num_digits=8, prefix=key, suffix="max")
 
         self.assertAlmostEqual(
-            epcstd.get_t_max(3, self.slow_rtcal, self.slow_trcal, self.slow_dr,
-                             self.temp), float('inf'))
+            epcstd.max_link_t(3, self.slow_rtcal, self.slow_trcal, self.slow_dr,
+                              self.temp), float('inf'))
 
         # Check that get_t_max works for n=1..7, n != 3 only
         with self.assertRaises(ValueError):
-            epcstd.get_t_max(0, self.slow_rtcal, self.slow_trcal, self.slow_dr,
-                             self.temp)
-            epcstd.get_t_max(8, self.slow_rtcal, self.slow_trcal, self.slow_dr,
-                             self.temp)
+            epcstd.max_link_t(0, self.slow_rtcal, self.slow_trcal, self.slow_dr,
+                              self.temp)
+            epcstd.max_link_t(8, self.slow_rtcal, self.slow_trcal, self.slow_dr,
+                              self.temp)
 
     def test_universal_get_t_min_with_parameters_from_modelParams(self):
         # Setting up slow parameters
@@ -1165,3 +1215,4 @@ class TestElementaryTimings(unittest.TestCase):
         for k, v in self.fast_t.items():
             self.assertIn(k, d, "key {} not found in timings".format(k))
             self.assertAlmostEqual(v, d[k], 8, "error in {}".format(k))
+

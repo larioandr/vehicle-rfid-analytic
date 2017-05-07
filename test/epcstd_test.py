@@ -804,6 +804,26 @@ class TestCommandsDurationEstimations(unittest.TestCase):
             word_count=params['word_cnt'], crc5=params['crc5'],
             crc16=params['crc16'])
 
+    @staticmethod
+    def set_default_parameters(par):
+        epcstd.modelParams.tari = par['tari']
+        epcstd.modelParams.rtcal = par['rtcal']
+        epcstd.modelParams.trcal = par['trcal']
+        epcstd.modelParams.delim = par['delim']
+        epcstd.modelParams.divide_ratio = par['dr']
+        epcstd.modelParams.tag_encoding = par['m']
+        epcstd.modelParams.trext = par['trext']
+        epcstd.modelParams.sel = par['sel']
+        epcstd.modelParams.session = par['session']
+        epcstd.modelParams.target = par['target']
+        epcstd.modelParams.Q = par['q']
+        epcstd.modelParams.default_rn = par['rn']
+        epcstd.modelParams.read_default_bank = par['bank']
+        epcstd.modelParams.read_default_word_ptr = par['word_ptr']
+        epcstd.modelParams.read_default_word_count = par['word_cnt']
+        epcstd.modelParams.default_crc5 = par['crc5']
+        epcstd.modelParams.default_crc16 = par['crc16']
+
     def test_query_duration(self):
         slow_query = epcstd.Query(
             self.slow['dr'], self.slow['m'], self.slow['trext'],
@@ -845,6 +865,40 @@ class TestCommandsDurationEstimations(unittest.TestCase):
                 crc=self.fast['crc5']),
             8, "query_duration(fast params) doesn't match frame")
 
+    def test_query_duration_with_default_parameters(self):
+        slow_query = epcstd.Query(
+            self.slow['dr'], self.slow['m'], self.slow['trext'],
+            self.slow['sel'], self.slow['session'], self.slow['target'],
+            self.slow['q'], self.slow['crc5'])
+        fast_query = epcstd.Query(
+            self.fast['dr'], self.fast['m'], self.fast['trext'],
+            self.fast['sel'], self.fast['session'], self.fast['target'],
+            self.fast['q'], self.fast['crc5'])
+        slow_frame = epcstd.ReaderFrame(self.slow['preamble'], slow_query)
+        fast_frame = epcstd.ReaderFrame(self.fast['preamble'], fast_query)
+
+        self.set_default_parameters(self.slow)
+
+        self.assertAlmostEqual(
+            slow_frame.duration,
+            epcstd.command_duration(epcstd.CommandCode.QUERY), 8,
+            "command_duration(QUERY, default=slow) doesn't match frame")
+        self.assertAlmostEqual(
+            slow_frame.duration,
+            epcstd.query_duration(), 8,
+            "query_duration(default=slow) doesnt' match frame")
+
+        self.set_default_parameters(self.fast)
+
+        self.assertAlmostEqual(
+            fast_frame.duration,
+            epcstd.command_duration(epcstd.CommandCode.QUERY), 8,
+            "command_duration(QUERY, default=fast) doesn't match frame")
+        self.assertAlmostEqual(
+            fast_frame.duration,
+            epcstd.query_duration(), 8,
+            "query_duration(default=fast) doesn't match frame")
+
     def test_query_rep_duration(self):
         slow_qrep = epcstd.QueryRep(self.slow['session'])
         fast_qrep = epcstd.QueryRep(self.fast['session'])
@@ -873,6 +927,32 @@ class TestCommandsDurationEstimations(unittest.TestCase):
                 trcal=self.fast['trcal'], delim=self.fast['delim'],
                 session=self.fast['session']),
             8, "query_rep_duration(fast) doesn't match frame")
+
+    def test_query_rep_duration_with_default_parameters(self):
+        slow_qrep = epcstd.QueryRep(self.slow['session'])
+        fast_qrep = epcstd.QueryRep(self.fast['session'])
+        slow_frame = epcstd.ReaderFrame(self.slow['sync'], slow_qrep)
+        fast_frame = epcstd.ReaderFrame(self.fast['sync'], fast_qrep)
+
+        self.set_default_parameters(self.slow)
+
+        self.assertAlmostEqual(
+            slow_frame.duration,
+            epcstd.command_duration(epcstd.CommandCode.QUERY_REP), 8,
+            "command_duration(QUERY_REP, default=slow) doesn't match frame")
+        self.assertAlmostEqual(
+            slow_frame.duration, epcstd.query_rep_duration(), 8,
+            "query_rep_duration(default=slow) doesn't match frame")
+
+        self.set_default_parameters(self.fast)
+
+        self.assertAlmostEqual(
+            fast_frame.duration,
+            epcstd.command_duration(epcstd.CommandCode.QUERY_REP), 8,
+            "command_duration(QUERY_REP, default=fast) doesn't match frame")
+        self.assertAlmostEqual(
+            fast_frame.duration, epcstd.query_rep_duration(), 8,
+            "query_rep_duration(default=fast) doesn't match frame")
 
     def test_ack_duration(self):
         slow_ack = epcstd.Ack(self.slow['rn'])
@@ -903,6 +983,32 @@ class TestCommandsDurationEstimations(unittest.TestCase):
                 rn=self.fast['rn']),
             8, "ack_duration(fast) doesn't match frame")
 
+    def test_ack_duration_with_default_parameters(self):
+        slow_ack = epcstd.Ack(self.slow['rn'])
+        fast_ack = epcstd.Ack(self.fast['rn'])
+        slow_frame = epcstd.ReaderFrame(self.slow['sync'], slow_ack)
+        fast_frame = epcstd.ReaderFrame(self.fast['sync'], fast_ack)
+
+        self.set_default_parameters(self.slow)
+
+        self.assertAlmostEqual(
+            slow_frame.duration,
+            epcstd.command_duration(epcstd.CommandCode.ACK), 8,
+            "command_duration(ACK, default=slow) doesn't match frame")
+        self.assertAlmostEqual(
+            slow_frame.duration, epcstd.ack_duration(), 8,
+            "ack_duration(default=slow) doesn't match frame")
+
+        self.set_default_parameters(self.fast)
+
+        self.assertAlmostEqual(
+            fast_frame.duration,
+            epcstd.command_duration(epcstd.CommandCode.ACK), 8,
+            "command_duration(ACK, default=fast) doesn't match frame")
+        self.assertAlmostEqual(
+            fast_frame.duration, epcstd.ack_duration(), 8,
+            "ack_duration(default=fast) doesn't match frame")
+
     def test_reqrn_duration(self):
         slow_reqrn = epcstd.ReqRN(self.slow['rn'], self.slow['crc16'])
         fast_reqrn = epcstd.ReqRN(self.fast['rn'], self.fast['crc16'])
@@ -931,6 +1037,32 @@ class TestCommandsDurationEstimations(unittest.TestCase):
                 trcal=self.fast['trcal'], delim=self.fast['delim'],
                 rn=self.fast['rn'], crc=self.fast['crc16']),
             8, "reqrn_duration(fast) doesn't match frame")
+
+    def test_reqrn_duration_with_default_parameters(self):
+        slow_reqrn = epcstd.ReqRN(self.slow['rn'], self.slow['crc16'])
+        fast_reqrn = epcstd.ReqRN(self.fast['rn'], self.fast['crc16'])
+        slow_frame = epcstd.ReaderFrame(self.slow['sync'], slow_reqrn)
+        fast_frame = epcstd.ReaderFrame(self.fast['sync'], fast_reqrn)
+
+        self.set_default_parameters(self.slow)
+
+        self.assertAlmostEqual(
+            slow_frame.duration,
+            epcstd.command_duration(epcstd.CommandCode.REQ_RN), 8,
+            "command_duration(REQ_RN, default=slow) doesn't match frame")
+        self.assertAlmostEqual(
+            slow_frame.duration, epcstd.reqrn_duration(), 8,
+            "reqrn_duration(default=slow) doesn't match frame")
+
+        self.set_default_parameters(self.fast)
+
+        self.assertAlmostEqual(
+            fast_frame.duration,
+            epcstd.command_duration(epcstd.CommandCode.REQ_RN), 8,
+            "command_duration(REQ_RN, default=fast) doesn't match frame")
+        self.assertAlmostEqual(
+            fast_frame.duration, epcstd.reqrn_duration(), 8,
+            "reqrn_duration(default=fast) doesn't match frame")
 
     def test_read_duration(self):
         slow_read = epcstd.Read(self.slow['bank'], self.slow['word_ptr'],
@@ -969,6 +1101,36 @@ class TestCommandsDurationEstimations(unittest.TestCase):
                 crc=self.fast['crc16']),
             8, "read_duration(fast params) doesn't match frame")
 
+    def test_read_duration_with_default_parameters(self):
+        slow_read = epcstd.Read(self.slow['bank'], self.slow['word_ptr'],
+                                self.slow['word_cnt'], self.slow['rn'],
+                                self.slow['crc16'])
+        fast_read = epcstd.Read(self.fast['bank'], self.fast['word_ptr'],
+                                self.fast['word_cnt'], self.fast['rn'],
+                                self.fast['crc16'])
+        slow_frame = epcstd.ReaderFrame(self.slow['sync'], slow_read)
+        fast_frame = epcstd.ReaderFrame(self.fast['sync'], fast_read)
+
+        self.set_default_parameters(self.slow)
+
+        self.assertAlmostEqual(
+            slow_frame.duration,
+            epcstd.command_duration(epcstd.CommandCode.READ), 8,
+            "command_duration(READ, default=slow) doesn't match frame")
+        self.assertAlmostEqual(
+            slow_frame.duration, epcstd.read_duration(), 8,
+            "read_duration(default=slow) doesn't match frame")
+
+        self.set_default_parameters(self.fast)
+
+        self.assertAlmostEqual(
+            fast_frame.duration,
+            epcstd.command_duration(epcstd.CommandCode.READ), 8,
+            "command_duration(READ, default=fast) doesn't match frame")
+        self.assertAlmostEqual(
+            fast_frame.duration, epcstd.read_duration(), 8,
+            "read_duration(default=fast) doesn't match frame")
+
 
 class TestTagFrameAccessors(unittest.TestCase):
     def setUp(self):
@@ -1001,6 +1163,261 @@ class TestTagFrameAccessors(unittest.TestCase):
                     self.assertAlmostEqual(
                         epcstd.tag_frame_duration(reply),
                         frame.get_duration(blf), 8, "frame = {}".format(frame))
+
+
+class TestRepliesDurationEstimations(unittest.TestCase):
+    """
+    Test-cases for functions ``reply_duration``, ``query_reply_duration``,
+    ``ack_reply_duration``, etc.
+    """
+    def setUp(self):
+        self.slow = dict(dr=epcstd.DivideRatio.DR_8, trcal=225.0e-6,
+                         encoding=epcstd.TagEncoding.M8, trext=True,
+                         epc_bytelen=12, word_cnt=15)
+        self.fast = dict(dr=epcstd.DivideRatio.DR_643, trcal=17.875e-6,
+                         encoding=epcstd.TagEncoding.FM0, trext=False,
+                         epc_bytelen=4, word_cnt=1)
+
+        for par in [self.slow, self.fast]:
+            par['blf'] = epcstd.get_blf(par['dr'], par['trcal'])
+            par['preamble'] = epcstd.create_tag_preamble(
+                par['encoding'], par['trext'])
+
+    @staticmethod
+    def get_reply_duration(reply_type, par):
+        return epcstd.reply_duration(
+            reply_type=reply_type, dr=par['dr'], trcal=par['trcal'],
+            encoding=par['encoding'], trext=par['trext'],
+            epc_bytelen=par['epc_bytelen'], words_count=par['word_cnt'])
+
+    @staticmethod
+    def set_default_parameters(par):
+        epcstd.modelParams.divide_ratio = par['dr']
+        epcstd.modelParams.trcal = par['trcal']
+        epcstd.modelParams.tag_encoding = par['encoding']
+        epcstd.modelParams.trext = par['trext']
+        epcstd.modelParams.default_epc = "FF" * par['epc_bytelen']
+        epcstd.modelParams.read_default_word_count = par['word_cnt']
+
+    def test_query_reply_duration(self):
+        reply = epcstd.QueryReply(0x0000)
+        slow_frame = epcstd.TagFrame(self.slow['preamble'], reply)
+        fast_frame = epcstd.TagFrame(self.fast['preamble'], reply)
+
+        self.assertAlmostEqual(
+            slow_frame.get_duration(self.slow['blf']),
+            self.get_reply_duration(epcstd.ReplyType.QUERY_REPLY, self.slow),
+            8, "reply_duration(QUERY_REPLY, slow) doesn't match frame")
+        self.assertAlmostEqual(
+            slow_frame.get_duration(self.slow['blf']),
+            epcstd.query_reply_duration(
+                dr=self.slow['dr'], trcal=self.slow['trcal'],
+                encoding=self.slow['encoding'], trext=self.slow['trext']),
+            8, "query_reply_duration(slow params) doesn't match frame")
+        self.assertAlmostEqual(
+            fast_frame.get_duration(self.fast['blf']),
+            self.get_reply_duration(epcstd.ReplyType.QUERY_REPLY, self.fast),
+            8, "reply_duration(QUERY_REPLY, fast) doesn't match frame")
+        self.assertAlmostEqual(
+            fast_frame.get_duration(self.fast['blf']),
+            epcstd.query_reply_duration(
+                self.fast['dr'], self.fast['trcal'], self.fast['encoding'],
+                self.fast['trext']),
+            8, "query_reply_duration(fast params) doesn't match frame")
+
+    def test_query_reply_duration_with_default_parameters(self):
+        reply = epcstd.QueryReply()
+        slow_frame = epcstd.TagFrame(self.slow['preamble'], reply)
+        fast_frame = epcstd.TagFrame(self.fast['preamble'], reply)
+
+        self.set_default_parameters(self.slow)
+
+        self.assertAlmostEqual(
+            slow_frame.get_duration(self.slow['blf']),
+            epcstd.reply_duration(epcstd.ReplyType.QUERY_REPLY), 8,
+            "reply_duration(QUERY_REPLY, default=slow) doesn't match frame")
+        self.assertAlmostEqual(
+            slow_frame.get_duration(self.slow['blf']),
+            epcstd.query_reply_duration(), 8,
+            "query_reply_duration(default=slow) doesn't match frame")
+
+        self.set_default_parameters(self.fast)
+
+        self.assertAlmostEqual(
+            fast_frame.get_duration(self.fast['blf']),
+            epcstd.reply_duration(epcstd.ReplyType.QUERY_REPLY), 8,
+            "reply_duration(QUERY_REPLY, default=fast) doesn't match frame")
+        self.assertAlmostEqual(
+            fast_frame.get_duration(self.fast['blf']),
+            epcstd.query_reply_duration(), 8,
+            "query_reply_duration(default=fast) doesn't match frame")
+
+    def test_ack_reply_duration(self):
+        slow_reply = epcstd.AckReply(epc=("FF" * self.slow['epc_bytelen']))
+        fast_reply = epcstd.AckReply(epc=("FF" * self.fast['epc_bytelen']))
+        slow_frame = epcstd.TagFrame(self.slow['preamble'], slow_reply)
+        fast_frame = epcstd.TagFrame(self.fast['preamble'], fast_reply)
+
+        self.assertAlmostEqual(
+            slow_frame.get_duration(self.slow['blf']),
+            self.get_reply_duration(epcstd.ReplyType.ACK_REPLY, self.slow),
+            8, "reply_duration(ACK_REPLY, slow) doesn't match frame")
+        self.assertAlmostEqual(
+            slow_frame.get_duration(self.slow['blf']),
+            epcstd.ack_reply_duration(
+                dr=self.slow['dr'], trcal=self.slow['trcal'],
+                encoding=self.slow['encoding'], trext=self.slow['trext'],
+                epc_bytelen=self.slow['epc_bytelen']),
+            8, "ack_reply_duration(slow params) doesn't match frame")
+        self.assertAlmostEqual(
+            fast_frame.get_duration(self.fast['blf']),
+            self.get_reply_duration(epcstd.ReplyType.ACK_REPLY, self.fast),
+            8, "reply_duration(ACK_REPLY, fast) doesn't match frame")
+        self.assertAlmostEqual(
+            fast_frame.get_duration(self.fast['blf']),
+            epcstd.ack_reply_duration(
+                dr=self.fast['dr'], trcal=self.fast['trcal'],
+                encoding=self.fast['encoding'], trext=self.fast['trext'],
+                epc_bytelen=self.fast['epc_bytelen']),
+            8, "ack_reply_duration(fast params) doesn't match frame")
+
+    def test_ack_reply_duration_with_default_parameters(self):
+        slow_reply = epcstd.AckReply(epc=("FF" * self.slow['epc_bytelen']))
+        fast_reply = epcstd.AckReply(epc=("FF" * self.fast['epc_bytelen']))
+        slow_frame = epcstd.TagFrame(self.slow['preamble'], slow_reply)
+        fast_frame = epcstd.TagFrame(self.fast['preamble'], fast_reply)
+
+        self.set_default_parameters(self.slow)
+
+        self.assertAlmostEqual(
+            slow_frame.get_duration(self.slow['blf']),
+            epcstd.reply_duration(epcstd.ReplyType.ACK_REPLY), 8,
+            "reply_duration(ACK_REPLY, default=slow) doesn't match frame")
+        self.assertAlmostEqual(
+            slow_frame.get_duration(self.slow['blf']),
+            epcstd.ack_reply_duration(), 8,
+            "ack_reply_duration(default=slow) doesn't match frame")
+
+        self.set_default_parameters(self.fast)
+
+        self.assertAlmostEqual(
+            fast_frame.get_duration(self.fast['blf']),
+            epcstd.reply_duration(epcstd.ReplyType.ACK_REPLY), 8,
+            "reply_duration(ACK_REPLY, default=fast) doesn't match frame")
+        self.assertAlmostEqual(
+            fast_frame.get_duration(self.fast['blf']),
+            epcstd.ack_reply_duration(), 8,
+            "ack_reply_duration(default=fast) doesn't match frame")
+
+    def test_reqrn_reply_duration(self):
+        reply = epcstd.ReqRnReply()
+        slow_frame = epcstd.TagFrame(self.slow['preamble'], reply)
+        fast_frame = epcstd.TagFrame(self.fast['preamble'], reply)
+
+        self.assertAlmostEqual(
+            slow_frame.get_duration(self.slow['blf']),
+            self.get_reply_duration(epcstd.ReplyType.REQRN_REPLY, self.slow),
+            8, "reply_duration(REQRN_REPLY, slow) doesn't match frame")
+        self.assertAlmostEqual(
+            slow_frame.get_duration(self.slow['blf']),
+            epcstd.reqrn_reply_duration(
+                dr=self.slow['dr'], trcal=self.slow['trcal'],
+                encoding=self.slow['encoding'], trext=self.slow['trext']),
+            8, "reqrn_reply_duration(slow params) doesn't match frame")
+        self.assertAlmostEqual(
+            fast_frame.get_duration(self.fast['blf']),
+            self.get_reply_duration(epcstd.ReplyType.REQRN_REPLY, self.fast),
+            8, "reply_duration(REQRN_REPLY, fast) doesn't match frame")
+        self.assertAlmostEqual(
+            fast_frame.get_duration(self.fast['blf']),
+            epcstd.reqrn_reply_duration(
+                dr=self.fast['dr'], trcal=self.fast['trcal'],
+                encoding=self.fast['encoding'], trext=self.fast['trext']),
+            8, "reqrn_reply_duration(fast params) doesn't match frame")
+
+    def test_reqrn_reply_duration_with_default_parameters(self):
+        reply = epcstd.ReqRnReply()
+        slow_frame = epcstd.TagFrame(self.slow['preamble'], reply)
+        fast_frame = epcstd.TagFrame(self.fast['preamble'], reply)
+
+        self.set_default_parameters(self.slow)
+
+        self.assertAlmostEqual(
+            slow_frame.get_duration(self.slow['blf']),
+            epcstd.reply_duration(epcstd.ReplyType.REQRN_REPLY), 8,
+            "reply_duration(REQRN_REPLY, default=slow) doesn't match frame")
+        self.assertAlmostEqual(
+            slow_frame.get_duration(self.slow['blf']),
+            epcstd.reqrn_reply_duration(), 8,
+            "reqrn_reply_duration(default=slow) doesn't match frame")
+
+        self.set_default_parameters(self.fast)
+
+        self.assertAlmostEqual(
+            fast_frame.get_duration(self.fast['blf']),
+            epcstd.reply_duration(epcstd.ReplyType.REQRN_REPLY), 8,
+            "reply_duration(REQRN_REPLY, default=fast) doesn't match frame")
+        self.assertAlmostEqual(
+            fast_frame.get_duration(self.fast['blf']),
+            epcstd.reqrn_reply_duration(), 8,
+            "reqrn_reply_duration(default=fast) doesn't match frame")
+
+    def test_read_reply_duration(self):
+        slow_reply = epcstd.ReadReply("FFFF" * self.slow['word_cnt'])
+        fast_reply = epcstd.ReadReply("FFFF" * self.fast['word_cnt'])
+        slow_frame = epcstd.TagFrame(self.slow['preamble'], slow_reply)
+        fast_frame = epcstd.TagFrame(self.fast['preamble'], fast_reply)
+
+        self.assertAlmostEqual(
+            slow_frame.get_duration(self.slow['blf']),
+            self.get_reply_duration(epcstd.ReplyType.READ_REPLY, self.slow),
+            8, "reply_duration(READ_REPLY, slow) doesn't match frame")
+        self.assertAlmostEqual(
+            slow_frame.get_duration(self.slow['blf']),
+            epcstd.read_reply_duration(
+                dr=self.slow['dr'], trcal=self.slow['trcal'],
+                encoding=self.slow['encoding'], trext=self.slow['trext'],
+                words_count=self.slow['word_cnt']),
+            8, "read_reply_duration(slow params) doesn't match frame")
+        self.assertAlmostEqual(
+            fast_frame.get_duration(self.fast['blf']),
+            self.get_reply_duration(epcstd.ReplyType.READ_REPLY, self.fast),
+            8, "reply_duration(READ_REPLY, fast) doesn't match frame")
+        self.assertAlmostEqual(
+            fast_frame.get_duration(self.fast['blf']),
+            epcstd.read_reply_duration(
+                dr=self.fast['dr'], trcal=self.fast['trcal'],
+                encoding=self.fast['encoding'], trext=self.fast['trext'],
+                words_count=self.fast['word_cnt']),
+            8, "read_reply_duration(fast params) doesn't match frame")
+
+    def test_read_reply_duration_with_default_parameters(self):
+        slow_reply = epcstd.ReadReply("FFFF" * self.slow['word_cnt'])
+        fast_reply = epcstd.ReadReply("FFFF" * self.fast['word_cnt'])
+        slow_frame = epcstd.TagFrame(self.slow['preamble'], slow_reply)
+        fast_frame = epcstd.TagFrame(self.fast['preamble'], fast_reply)
+
+        self.set_default_parameters(self.slow)
+
+        self.assertAlmostEqual(
+            slow_frame.get_duration(self.slow['blf']),
+            epcstd.reply_duration(epcstd.ReplyType.READ_REPLY), 8,
+            "reply_duration(READ_REPLY, default=slow) doesn't match frame")
+        self.assertAlmostEqual(
+            slow_frame.get_duration(self.slow['blf']),
+            epcstd.read_reply_duration(), 8,
+            "read_reply_duration(default=slow) doesn't match frame")
+
+        self.set_default_parameters(self.fast)
+
+        self.assertAlmostEqual(
+            fast_frame.get_duration(self.fast['blf']),
+            epcstd.reply_duration(epcstd.ReplyType.READ_REPLY), 8,
+            "reply_duration(READ_REPLY, default=fast) doesn't match frame")
+        self.assertAlmostEqual(
+            fast_frame.get_duration(self.fast['blf']),
+            epcstd.read_reply_duration(), 8,
+            "read_reply_duration(default=fast) doesn't match frame")
 
 
 class TestFrequencyToleranceEstimator(unittest.TestCase):

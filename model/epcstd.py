@@ -206,6 +206,9 @@ class ModelParams:
     access_ops = []  # this list contains reader commands for tag access
     default_epc = "FF" * 12
     default_read_data = "FF" * 8
+    default_rn = 0x0000
+    default_crc5 = 0x00
+    default_crc16 = 0x0000
 
 
 modelParams = ModelParams()
@@ -285,7 +288,7 @@ class Command:
 
 class Query(Command):
     def __init__(self, dr=None, m=None, trext=None, sel=None, session=None,
-                 target=None, q=None, crc=0x00):
+                 target=None, q=None, crc=None):
         super().__init__(CommandCode.QUERY)
         self.dr = dr if dr is not None else modelParams.divide_ratio
         self.m = m if m is not None else modelParams.tag_encoding
@@ -294,7 +297,7 @@ class Query(Command):
         self.session = session if session is not None else modelParams.session
         self.target = target if target is not None else modelParams.target
         self.q = q if q is not None else modelParams.Q
-        self.crc = crc
+        self.crc = crc if crc is not None else modelParams.default_crc5
 
     def encode(self):
         return (self.code.code + self.dr.code + self.m.code +
@@ -323,7 +326,7 @@ class QueryRep(Command):
 class Ack(Command):
     def __init__(self, rn):
         super().__init__(CommandCode.ACK)
-        self.rn = rn
+        self.rn = rn if rn is not None else modelParams.default_rn
 
     def encode(self):
         return self.code.code + encode_int(self.rn, 16)
@@ -333,10 +336,10 @@ class Ack(Command):
 
 
 class ReqRN(Command):
-    def __init__(self, rn=0x0000, crc=0x0000):
+    def __init__(self, rn=None, crc=None):
         super().__init__(CommandCode.REQ_RN)
-        self.rn = rn
-        self.crc = crc
+        self.rn = rn if rn is not None else modelParams.default_rn
+        self.crc = crc if crc is not None else modelParams.default_crc16
 
     def encode(self):
         return self.code.code + encode_word(self.rn) + encode_word(self.crc)
@@ -347,7 +350,7 @@ class ReqRN(Command):
 
 class Read(Command):
     def __init__(self, bank=None, word_ptr=None, word_count=None,
-                 rn=0x0000, crc=0x0000):
+                 rn=None, crc=None):
         super().__init__(CommandCode.READ)
         self.bank = (bank if bank is not None
                      else modelParams.read_default_bank)
@@ -355,8 +358,8 @@ class Read(Command):
                          else modelParams.read_default_word_ptr)
         self.word_count = (word_count if word_count is not None
                            else modelParams.read_default_word_count)
-        self.rn = rn
-        self.crc = crc
+        self.rn = rn if rn is not None else modelParams.default_rn
+        self.crc = crc if crc is not None else modelParams.default_crc16
 
     def encode(self):
         return (self.code.code + self.bank.code + encode_ebv(self.word_ptr) +
@@ -703,7 +706,7 @@ def command_duration(command_code,
                      tari=None, rtcal=None, trcal=None, delim=None, dr=None,
                      m=None, trext=None, sel=None, session=None, target=None,
                      q=None, rn=None, bank=None, word_ptr=None,
-                     word_count=None, crc5=0, crc16=0):
+                     word_count=None, crc5=None, crc16=None):
     if command_code is CommandCode.QUERY:
         return query_duration(tari, rtcal, trcal, delim, dr, m, trext, sel,
                               session, target, q, crc5)
@@ -723,7 +726,7 @@ def command_duration(command_code,
 # noinspection PyTypeChecker
 def query_duration(tari=None, rtcal=None, trcal=None, delim=None, dr=None,
                    m=None, trext=None, sel=None, session=None, target=None,
-                   q=None, crc=0x00):
+                   q=None, crc=None):
     return reader_frame_duration(Query(dr, m, trext, sel, session, target,
                                        q, crc), tari, rtcal, trcal, delim)
 
@@ -742,24 +745,23 @@ def ack_duration(tari=None, rtcal=None, trcal=None, delim=None, rn=None):
 
 # noinspection PyTypeChecker
 def reqrn_duration(tari=None, rtcal=None, trcal=None, delim=None, rn=None,
-                   crc=0):
+                   crc=None):
     return reader_frame_duration(ReqRN(rn, crc), tari, rtcal, trcal, delim)
 
 
 # noinspection PyTypeChecker
 def read_duration(tari=None, rtcal=None, trcal=None, delim=None, bank=None,
-                  word_ptr=None, word_count=None, rn=None, crc=0x00):
+                  word_ptr=None, word_count=None, rn=None, crc=None):
     return reader_frame_duration(Read(bank, word_ptr, word_count, rn, crc),
                                  tari, rtcal, trcal, delim)
 
 
-# TODO: no test
 def reply_duration(reply_type, dr=None, trcal=None, encoding=None, trext=None,
-                   epc=None, words_count=None):
+                   epc_bytelen=None, words_count=None):
     if reply_type is ReplyType.QUERY_REPLY:
         return query_reply_duration(dr, trcal, encoding, trext)
     elif reply_type is ReplyType.ACK_REPLY:
-        return ack_reply_duration(dr, trcal, encoding, trext, epc)
+        return ack_reply_duration(dr, trcal, encoding, trext, epc_bytelen)
     elif reply_type is ReplyType.REQRN_REPLY:
         return reqrn_reply_duration(dr, trcal, encoding, trext)
     elif reply_type is ReplyType.READ_REPLY:
@@ -769,31 +771,31 @@ def reply_duration(reply_type, dr=None, trcal=None, encoding=None, trext=None,
 
 
 def __reply_duration(bs=0, dr=None, trcal=None, encoding=None, trext=None):
-    bitrate = get_tag_bitrate(dr, trcal, encoding)
+    bitrate = tag_bitrate(dr, trcal, encoding)
     preamble_bs = tag_preamble_bitlen(encoding, trext)
     suffix_bs = 1
     return (preamble_bs + bs + suffix_bs) / bitrate
 
 
-# TODO: no test
 def query_reply_duration(dr=None, trcal=None, encoding=None, trext=None):
     return __reply_duration(16, dr, trcal, encoding, trext)
 
 
-# TODO: no test
 def ack_reply_duration(dr=None, trcal=None, encoding=None, trext=None,
-                       epc=None):
-    return __reply_duration(32 + len(epc) * 8, dr, trcal, encoding, trext)
+                       epc_bytelen=None):
+    epc_bytelen = epc_bytelen if epc_bytelen is not None else \
+        len(to_bytes(modelParams.default_epc))
+    return __reply_duration(32 + epc_bytelen * 8, dr, trcal, encoding, trext)
 
 
-# TODO: no test
 def reqrn_reply_duration(dr=None, trcal=None, encoding=None, trext=None):
-    return __reply_duration(16, dr, trcal, encoding, trext)
+    return __reply_duration(32, dr, trcal, encoding, trext)
 
 
-# TODO: no test
 def read_reply_duration(dr=None, trcal=None, encoding=None, trext=None,
                         words_count=None):
+    words_count = words_count if words_count is not None else \
+        modelParams.read_default_word_count
     return __reply_duration(words_count * 16 + 33, dr, trcal, encoding, trext)
 
 
@@ -808,7 +810,8 @@ def get_blf(dr=None, trcal=None):
     return dr.eval() / trcal
 
 
-def get_tag_bitrate(dr=None, trcal=None, encoding=None):
+def tag_bitrate(dr=None, trcal=None, encoding=None):
+    encoding = encoding if encoding is not None else modelParams.tag_encoding
     blf = get_blf(dr, trcal)
     return blf / encoding.symbols_per_bit
 

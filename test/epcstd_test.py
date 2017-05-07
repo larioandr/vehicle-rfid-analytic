@@ -656,76 +656,76 @@ class TestReaderFrameAccessors(unittest.TestCase):
         self.fast_query_frame = epcstd.ReaderFrame(
             self.fast_preamble, self.query)
 
-    def test_get_reader_frame_duration_return_equals_sync_frame_getter(self):
+    def test_reader_frame_duration_return_equals_sync_frame_getter(self):
         self.assertAlmostEqual(
-            epcstd.get_reader_frame_duration(
+            epcstd.reader_frame_duration(
                 tari=self.slow_tari, rtcal=self.slow_rtcal, command=self.ack),
             self.slow_ack_frame.duration, 8)
         self.assertAlmostEqual(
-            epcstd.get_reader_frame_duration(
+            epcstd.reader_frame_duration(
                 tari=self.fast_tari, rtcal=self.fast_rtcal, command=self.ack),
             self.fast_ack_frame.duration, 8)
         self.assertAlmostEqual(
-            epcstd.get_reader_frame_duration(
+            epcstd.reader_frame_duration(
                 tari=self.slow_tari, rtcal=self.slow_rtcal,
                 command=self.query_rep),
             self.slow_query_rep_frame.duration, 8)
         self.assertAlmostEqual(
-            epcstd.get_reader_frame_duration(
+            epcstd.reader_frame_duration(
                 tari=self.fast_tari, rtcal=self.fast_rtcal,
                 command=self.query_rep),
             self.fast_query_rep_frame.duration, 8)
 
-    def test_get_reader_frame_duration_return_equals_query_frame_getter(self):
+    def test_reader_frame_duration_return_equals_query_frame_getter(self):
         self.assertAlmostEqual(
-            epcstd.get_reader_frame_duration(
+            epcstd.reader_frame_duration(
                 tari=self.slow_tari, rtcal=self.slow_rtcal,
                 trcal=self.slow_trcal, command=self.query),
             self.slow_query_frame.duration, 8)
         self.assertAlmostEqual(
-            epcstd.get_reader_frame_duration(
+            epcstd.reader_frame_duration(
                 tari=self.fast_tari, rtcal=self.fast_rtcal,
                 trcal=self.fast_trcal, command=self.query),
             self.fast_query_frame.duration, 8)
 
-    def test_get_reader_frame_duration_recognizes_encoded_sync_commands(self):
+    def test_reader_frame_duration_recognizes_encoded_sync_commands(self):
         encoded_ack = self.ack.encode()
         encoded_query_rep = self.query_rep.encode()
         self.assertAlmostEqual(
-            epcstd.get_reader_frame_duration(
+            epcstd.reader_frame_duration(
                 tari=self.slow_tari, rtcal=self.slow_rtcal,
                 command=encoded_ack),
             self.slow_ack_frame.duration, 8)
         self.assertAlmostEqual(
-            epcstd.get_reader_frame_duration(
+            epcstd.reader_frame_duration(
                 tari=self.fast_tari, rtcal=self.fast_rtcal,
                 command=encoded_ack),
             self.fast_ack_frame.duration, 8)
         self.assertAlmostEqual(
-            epcstd.get_reader_frame_duration(
+            epcstd.reader_frame_duration(
                 tari=self.slow_tari, rtcal=self.slow_rtcal,
                 command=encoded_query_rep),
             self.slow_query_rep_frame.duration, 8)
         self.assertAlmostEqual(
-            epcstd.get_reader_frame_duration(
+            epcstd.reader_frame_duration(
                 tari=self.fast_tari, rtcal=self.fast_rtcal,
                 command=encoded_query_rep),
             self.fast_query_rep_frame.duration, 8)
 
-    def test_get_reader_frame_duration_recognizes_encoded_query_command(self):
+    def test_reader_frame_duration_recognizes_encoded_query_command(self):
         encoded_query = self.query.encode()
         self.assertAlmostEqual(
-            epcstd.get_reader_frame_duration(
+            epcstd.reader_frame_duration(
                 tari=self.slow_tari, rtcal=self.slow_rtcal,
                 trcal=self.slow_trcal, command=encoded_query),
             self.slow_query_frame.duration, 8)
         self.assertAlmostEqual(
-            epcstd.get_reader_frame_duration(
+            epcstd.reader_frame_duration(
                 tari=self.fast_tari, rtcal=self.fast_rtcal,
                 trcal=self.fast_trcal, command=encoded_query),
             self.fast_query_frame.duration, 8)
 
-    def test_get_reader_frame_duration_uses_default_modelParams(self):
+    def test_reader_frame_duration_uses_default_modelParams(self):
         #
         # 1) Setting readerParams to slow frame type
         #
@@ -733,13 +733,13 @@ class TestReaderFrameAccessors(unittest.TestCase):
         epcstd.modelParams.rtcal = self.slow_rtcal
         epcstd.modelParams.trcal = self.slow_trcal
         self.assertAlmostEqual(
-            epcstd.get_reader_frame_duration(self.ack),
+            epcstd.reader_frame_duration(self.ack),
             self.slow_ack_frame.duration, 8)
         self.assertAlmostEqual(
-            epcstd.get_reader_frame_duration(self.query_rep),
+            epcstd.reader_frame_duration(self.query_rep),
             self.slow_query_rep_frame.duration, 8)
         self.assertAlmostEqual(
-            epcstd.get_reader_frame_duration(self.query),
+            epcstd.reader_frame_duration(self.query),
             self.slow_query_frame.duration, 8)
 
         #
@@ -749,14 +749,225 @@ class TestReaderFrameAccessors(unittest.TestCase):
         epcstd.modelParams.rtcal = self.fast_rtcal
         epcstd.modelParams.trcal = self.fast_trcal
         self.assertAlmostEqual(
-            epcstd.get_reader_frame_duration(self.ack),
+            epcstd.reader_frame_duration(self.ack),
             self.fast_ack_frame.duration, 8)
         self.assertAlmostEqual(
-            epcstd.get_reader_frame_duration(self.query_rep),
+            epcstd.reader_frame_duration(self.query_rep),
             self.fast_query_rep_frame.duration, 8)
         self.assertAlmostEqual(
-            epcstd.get_reader_frame_duration(self.query),
+            epcstd.reader_frame_duration(self.query),
             self.fast_query_frame.duration, 8)
+
+
+class TestCommandsDurationEstimations(unittest.TestCase):
+    """
+    Test-cases for functions ``command_duration``, ``query_duration``,
+    ``query_rep_duration``, etc.
+    """
+    def setUp(self):
+        self.slow = dict(
+            tari=25.0e-6, rtcal=75.0e-6, trcal=225.0e-6, delim=12.5e-6,
+            dr=epcstd.DivideRatio.DR_8, m=epcstd.TagEncoding.M8, trext=True,
+            sel=epcstd.SelFlag.SEL, session=epcstd.Session.S3,
+            target=epcstd.InventoryFlag.B, q=15, rn=0xFFFF,
+            bank=epcstd.MemoryBank.TID, word_ptr=0xF, word_cnt=15,
+            crc5=0x1F, crc16=0xFFFF)
+
+        self.fast = dict(
+            tari=6.25e-6, rtcal=15.625e-6, trcal=17.1875e-6, delim=12.5e-6,
+            dr=epcstd.DivideRatio.DR_643, m=epcstd.TagEncoding.FM0, trext=False,
+            sel=epcstd.SelFlag.ALL, session=epcstd.Session.S0,
+            target=epcstd.InventoryFlag.A, q=0, rn=0x0000,
+            bank=epcstd.MemoryBank.EPC, word_ptr=0x0, word_cnt=1,
+            crc5=0x00, crc16=0x0000)
+
+        self.slow['preamble'] = epcstd.ReaderPreamble(
+            self.slow['tari'], self.slow['rtcal'], self.slow['trcal'],
+            self.slow['delim'])
+        self.fast['preamble'] = epcstd.ReaderPreamble(
+            self.fast['tari'], self.fast['rtcal'], self.fast['trcal'],
+            self.fast['delim'])
+        self.slow['sync'] = epcstd.ReaderSync(
+            self.slow['tari'], self.slow['rtcal'], self.slow['delim'])
+        self.fast['sync'] = epcstd.ReaderSync(
+            self.fast['tari'], self.fast['rtcal'], self.fast['delim'])
+
+    @staticmethod
+    def get_command_duration(command_code, params):
+        return epcstd.command_duration(
+            command_code=command_code, tari=params['tari'],
+            rtcal=params['rtcal'], trcal=params['trcal'], delim=params['delim'],
+            dr=params['dr'], m=params['m'], trext=params['trext'],
+            sel=params['sel'], session=params['session'],
+            target=params['target'], q=params['q'], rn=params['rn'],
+            bank=params['bank'], word_ptr=params['word_ptr'],
+            word_count=params['word_cnt'], crc5=params['crc5'],
+            crc16=params['crc16'])
+
+    def test_query_duration(self):
+        slow_query = epcstd.Query(
+            self.slow['dr'], self.slow['m'], self.slow['trext'],
+            self.slow['sel'], self.slow['session'], self.slow['target'],
+            self.slow['q'], self.slow['crc5'])
+        fast_query = epcstd.Query(
+            self.fast['dr'], self.fast['m'], self.fast['trext'],
+            self.fast['sel'], self.fast['session'], self.fast['target'],
+            self.fast['q'], self.fast['crc5'])
+        slow_frame = epcstd.ReaderFrame(self.slow['preamble'], slow_query)
+        fast_frame = epcstd.ReaderFrame(self.fast['preamble'], fast_query)
+
+        self.assertAlmostEqual(
+            slow_frame.duration,
+            self.get_command_duration(epcstd.CommandCode.QUERY, self.slow),
+            8, "command_duration(QUERY, slow) doesn't match frame")
+        self.assertAlmostEqual(
+            slow_frame.duration,
+            epcstd.query_duration(
+                tari=self.slow['tari'], rtcal=self.slow['rtcal'],
+                trcal=self.slow['trcal'], delim=self.slow['delim'],
+                dr=self.slow['dr'], m=self.slow['m'], trext=self.slow['trext'],
+                sel=self.slow['sel'], session=self.slow['session'],
+                target=self.slow['target'], q=self.slow['q'],
+                crc=self.slow['crc5']),
+            8, "query_duration(slow params) doesn't match frame")
+        self.assertAlmostEqual(
+            fast_frame.duration,
+            self.get_command_duration(epcstd.CommandCode.QUERY, self.fast),
+            8, "command_duration(QUERY, fast) doesn't match frame")
+        self.assertAlmostEqual(
+            fast_frame.duration,
+            epcstd.query_duration(
+                tari=self.fast['tari'], rtcal=self.fast['rtcal'],
+                trcal=self.fast['trcal'], delim=self.fast['delim'],
+                dr=self.fast['dr'], m=self.fast['m'], trext=self.fast['trext'],
+                sel=self.fast['sel'], session=self.fast['session'],
+                target=self.fast['target'], q=self.fast['q'],
+                crc=self.fast['crc5']),
+            8, "query_duration(fast params) doesn't match frame")
+
+    def test_query_rep_duration(self):
+        slow_qrep = epcstd.QueryRep(self.slow['session'])
+        fast_qrep = epcstd.QueryRep(self.fast['session'])
+        slow_frame = epcstd.ReaderFrame(self.slow['sync'], slow_qrep)
+        fast_frame = epcstd.ReaderFrame(self.fast['sync'], fast_qrep)
+
+        self.assertAlmostEqual(
+            slow_frame.duration,
+            self.get_command_duration(epcstd.CommandCode.QUERY_REP, self.slow),
+            8, "command_duration(QUERY_REP, slow) doesn't match frame")
+        self.assertAlmostEqual(
+            slow_frame.duration,
+            epcstd.query_rep_duration(
+                tari=self.slow['tari'], rtcal=self.slow['rtcal'],
+                trcal=self.slow['trcal'], delim=self.slow['delim'],
+                session=self.slow['session']),
+            8, "query_rep_duration(slow) doesn't match frame")
+        self.assertAlmostEqual(
+            fast_frame.duration,
+            self.get_command_duration(epcstd.CommandCode.QUERY_REP, self.fast),
+            8, "command_duration(QUERY_REP, fast) doesn't match frame")
+        self.assertAlmostEqual(
+            fast_frame.duration,
+            epcstd.query_rep_duration(
+                tari=self.fast['tari'], rtcal=self.fast['rtcal'],
+                trcal=self.fast['trcal'], delim=self.fast['delim'],
+                session=self.fast['session']),
+            8, "query_rep_duration(fast) doesn't match frame")
+
+    def test_ack_duration(self):
+        slow_ack = epcstd.Ack(self.slow['rn'])
+        fast_ack = epcstd.Ack(self.fast['rn'])
+        slow_frame = epcstd.ReaderFrame(self.slow['sync'], slow_ack)
+        fast_frame = epcstd.ReaderFrame(self.fast['sync'], fast_ack)
+
+        self.assertAlmostEqual(
+            slow_frame.duration,
+            self.get_command_duration(epcstd.CommandCode.ACK, self.slow),
+            8, "command_duration(ACK, slow) doesn't match frame")
+        self.assertAlmostEqual(
+            slow_frame.duration,
+            epcstd.ack_duration(
+                tari=self.slow['tari'], rtcal=self.slow['rtcal'],
+                trcal=self.slow['trcal'], delim=self.slow['delim'],
+                rn=self.slow['rn']),
+            8, "ack_duration(slow) doesn't match frame")
+        self.assertAlmostEqual(
+            fast_frame.duration,
+            self.get_command_duration(epcstd.CommandCode.ACK, self.fast),
+            8, "command_duration(ACK, fast) doesn't match frame")
+        self.assertAlmostEqual(
+            fast_frame.duration,
+            epcstd.ack_duration(
+                tari=self.fast['tari'], rtcal=self.fast['rtcal'],
+                trcal=self.fast['trcal'], delim=self.fast['delim'],
+                rn=self.fast['rn']),
+            8, "ack_duration(fast) doesn't match frame")
+
+    def test_reqrn_duration(self):
+        slow_reqrn = epcstd.ReqRN(self.slow['rn'], self.slow['crc16'])
+        fast_reqrn = epcstd.ReqRN(self.fast['rn'], self.fast['crc16'])
+        slow_frame = epcstd.ReaderFrame(self.slow['sync'], slow_reqrn)
+        fast_frame = epcstd.ReaderFrame(self.fast['sync'], fast_reqrn)
+
+        self.assertAlmostEqual(
+            slow_frame.duration,
+            self.get_command_duration(epcstd.CommandCode.REQ_RN, self.slow),
+            8, "command_duration(REQ_RN, slow) doesn't match frame")
+        self.assertAlmostEqual(
+            slow_frame.duration,
+            epcstd.reqrn_duration(
+                tari=self.slow['tari'], rtcal=self.slow['rtcal'],
+                trcal=self.slow['trcal'], delim=self.slow['delim'],
+                rn=self.slow['rn'], crc=self.slow['crc16']),
+            8, "reqrn_duration(slow) doesn't match frame")
+        self.assertAlmostEqual(
+            fast_frame.duration,
+            self.get_command_duration(epcstd.CommandCode.REQ_RN, self.fast),
+            8, "command_duration(REQ_RN, fast) doesn't match frame")
+        self.assertAlmostEqual(
+            fast_frame.duration,
+            epcstd.reqrn_duration(
+                tari=self.fast['tari'], rtcal=self.fast['rtcal'],
+                trcal=self.fast['trcal'], delim=self.fast['delim'],
+                rn=self.fast['rn'], crc=self.fast['crc16']),
+            8, "reqrn_duration(fast) doesn't match frame")
+
+    def test_read_duration(self):
+        slow_read = epcstd.Read(self.slow['bank'], self.slow['word_ptr'],
+                                self.slow['word_cnt'], self.slow['rn'],
+                                self.slow['crc16'])
+        fast_read = epcstd.Read(self.fast['bank'], self.fast['word_ptr'],
+                                self.fast['word_cnt'], self.fast['rn'],
+                                self.fast['crc16'])
+        slow_frame = epcstd.ReaderFrame(self.slow['sync'], slow_read)
+        fast_frame = epcstd.ReaderFrame(self.fast['sync'], fast_read)
+
+        self.assertAlmostEqual(
+            slow_frame.duration,
+            self.get_command_duration(epcstd.CommandCode.READ, self.slow),
+            8, "command_duration(READ, slow) doesn't match frame")
+        self.assertAlmostEqual(
+            slow_frame.duration,
+            epcstd.read_duration(
+                tari=self.slow['tari'], rtcal=self.slow['rtcal'],
+                trcal=self.slow['trcal'], delim=self.slow['delim'],
+                bank=self.slow['bank'], word_ptr=self.slow['word_ptr'],
+                word_count=self.slow['word_cnt'], rn=self.slow['rn'],
+                crc=self.slow['crc16']),
+            8, "read_duration(slow params) doesn't match frame")
+        self.assertAlmostEqual(
+            fast_frame.duration,
+            self.get_command_duration(epcstd.CommandCode.READ, self.fast),
+            8, "command_duration(READ, fast) doesn't match frame")
+        self.assertAlmostEqual(
+            fast_frame.duration,
+            epcstd.read_duration(
+                tari=self.fast['tari'], rtcal=self.fast['rtcal'],
+                trcal=self.fast['trcal'], delim=self.fast['delim'],
+                bank=self.fast['bank'], word_ptr=self.fast['word_ptr'],
+                word_count=self.fast['word_cnt'], rn=self.fast['rn'],
+                crc=self.fast['crc16']),
+            8, "read_duration(fast params) doesn't match frame")
 
 
 class TestTagFrameAccessors(unittest.TestCase):
@@ -773,7 +984,7 @@ class TestTagFrameAccessors(unittest.TestCase):
                 for blf in self.blfs:
                     frame = epcstd.TagFrame(preamble, reply)
                     self.assertAlmostEqual(
-                        epcstd.get_tag_frame_duration(
+                        epcstd.tag_frame_duration(
                             reply, blf, preamble.encoding, preamble.extended),
                         frame.get_duration(blf), 8)
 
@@ -788,7 +999,7 @@ class TestTagFrameAccessors(unittest.TestCase):
                         epcstd.modelParams.divide_ratio.eval() / blf
                     frame = epcstd.TagFrame(preamble, reply)
                     self.assertAlmostEqual(
-                        epcstd.get_tag_frame_duration(reply),
+                        epcstd.tag_frame_duration(reply),
                         frame.get_duration(blf), 8, "frame = {}".format(frame))
 
 

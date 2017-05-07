@@ -395,7 +395,6 @@ class Reply:
         return self.__type
 
 
-
 class QueryReply(Reply):
     def __init__(self, rn=0x0000):
         super().__init__(ReplyType.QUERY_REPLY)
@@ -652,7 +651,6 @@ class TagFrame:
         return "Frame{{{o.preamble}{o.reply}}}".format(o=self)
 
 
-# TODO: not tested
 # FIXME: not vectorized
 def tag_preamble_bitlen(encoding=None, trext=None):
     encoding = encoding if encoding is not None else modelParams.tag_encoding
@@ -663,11 +661,10 @@ def tag_preamble_bitlen(encoding=None, trext=None):
         return 22 if trext else 10
 
 
-# TODO: not tested
 def tag_preamble_duration(blf=None, encoding=None, trext=None):
     blf = blf if blf is not None else get_blf()
     bitlen = tag_preamble_bitlen(encoding, trext)
-    return bitlen / blf
+    return (bitlen * encoding.symbols_per_bit) / blf
 
 
 #
@@ -675,8 +672,8 @@ def tag_preamble_duration(blf=None, encoding=None, trext=None):
 # Reader and Tag frames helpers and accessors
 #######################################################################
 #
-def get_reader_frame_duration(command, tari=None, rtcal=None, trcal=None,
-                              delim=None):
+def reader_frame_duration(command, tari=None, rtcal=None, trcal=None,
+                          delim=None):
     tari = tari if tari is not None else modelParams.tari
     rtcal = rtcal if rtcal is not None else modelParams.rtcal
     trcal = trcal if trcal is not None else modelParams.trcal
@@ -692,7 +689,7 @@ def get_reader_frame_duration(command, tari=None, rtcal=None, trcal=None,
     return frame.duration
 
 
-def get_tag_frame_duration(reply, blf=None, encoding=None, trext=None):
+def tag_frame_duration(reply, blf=None, encoding=None, trext=None):
     blf = blf if blf is not None else get_blf()
     encoding = encoding if encoding is not None else modelParams.tag_encoding
     trext = trext if trext is not None else modelParams.trext
@@ -702,64 +699,58 @@ def get_tag_frame_duration(reply, blf=None, encoding=None, trext=None):
     return frame.get_duration(blf)
 
 
-# TODO: no test
-def command_duration(code,
+def command_duration(command_code,
                      tari=None, rtcal=None, trcal=None, delim=None, dr=None,
                      m=None, trext=None, sel=None, session=None, target=None,
                      q=None, rn=None, bank=None, word_ptr=None,
                      word_count=None, crc5=0, crc16=0):
-    if code is CommandCode.QUERY:
+    if command_code is CommandCode.QUERY:
         return query_duration(tari, rtcal, trcal, delim, dr, m, trext, sel,
                               session, target, q, crc5)
-    elif code is CommandCode.QUERY_REP:
+    elif command_code is CommandCode.QUERY_REP:
         return query_rep_duration(tari, rtcal, trcal, delim, session)
-    elif code is CommandCode.ACK:
+    elif command_code is CommandCode.ACK:
         return ack_duration(tari, rtcal, trcal, delim, rn)
-    elif code is CommandCode.REQ_RN:
+    elif command_code is CommandCode.REQ_RN:
         return reqrn_duration(tari, rtcal, trcal, delim, rn, crc16)
-    elif code is CommandCode.READ:
+    elif command_code is CommandCode.READ:
         return read_duration(tari, rtcal, trcal, delim, bank, word_ptr,
                              word_count, rn, crc16)
     else:
-        raise ValueError("unrecognized command code = {}".format(code))
+        raise ValueError("unrecognized command code = {}".format(command_code))
 
 
-# TODO: no test
 # noinspection PyTypeChecker
 def query_duration(tari=None, rtcal=None, trcal=None, delim=None, dr=None,
                    m=None, trext=None, sel=None, session=None, target=None,
                    q=None, crc=0x00):
-    return get_reader_frame_duration(Query(dr, m, trext, sel, session, target,
-                                           q, crc), tari, rtcal, trcal, delim)
+    return reader_frame_duration(Query(dr, m, trext, sel, session, target,
+                                       q, crc), tari, rtcal, trcal, delim)
 
 
-# TODO: no test
 # noinspection PyTypeChecker
 def query_rep_duration(tari=None, rtcal=None, trcal=None, delim=None,
                        session=None):
-    return get_reader_frame_duration(QueryRep(session), tari, rtcal, trcal,
-                                     delim)
+    return reader_frame_duration(QueryRep(session), tari, rtcal, trcal,
+                                 delim)
 
 
-# TODO: no test
 # noinspection PyTypeChecker
 def ack_duration(tari=None, rtcal=None, trcal=None, delim=None, rn=None):
-    return get_reader_frame_duration(Ack(rn), tari, rtcal, trcal, delim)
+    return reader_frame_duration(Ack(rn), tari, rtcal, trcal, delim)
 
 
-# TODO: no test
 # noinspection PyTypeChecker
 def reqrn_duration(tari=None, rtcal=None, trcal=None, delim=None, rn=None,
                    crc=0):
-    return get_reader_frame_duration(ReqRN(rn, crc), tari, rtcal, trcal, delim)
+    return reader_frame_duration(ReqRN(rn, crc), tari, rtcal, trcal, delim)
 
 
-# TODO: no test
 # noinspection PyTypeChecker
 def read_duration(tari=None, rtcal=None, trcal=None, delim=None, bank=None,
                   word_ptr=None, word_count=None, rn=None, crc=0x00):
-    return get_reader_frame_duration(Read(bank, word_ptr, word_count, rn, crc),
-                                     tari, rtcal, trcal, delim)
+    return reader_frame_duration(Read(bank, word_ptr, word_count, rn, crc),
+                                 tari, rtcal, trcal, delim)
 
 
 # TODO: no test
@@ -1049,33 +1040,26 @@ def slot_duration_max(slot_type, access_ops=None, tari=None, rtcal=None,
 #######################################################################
 #
 def estimate_inventory_round():
-    pass
+    pass  # TODO
 
 
 def estimate_inventory_round_min():
-    pass
+    pass  # TODO
 
 
 def estimate_inventory_round_max():
-    pass
+    pass  # TODO
 
 
 def estimate_inventory_round_pmf():
-    pass
+    pass  # TODO
 
-
-#
-#######################################################################
-#
-#######################################################################
-#
 
 #
 #######################################################################
 # Various helpers
 #######################################################################
 #
-
 
 # noinspection PyTypeChecker
 def get_elementary_timings(tari=None, rtcal=None, trcal=None, delim=None,
@@ -1129,16 +1113,16 @@ def get_elementary_timings(tari=None, rtcal=None, trcal=None, delim=None,
         'Bank':  bank,
         'WordPtr': word_ptr,
         'WordCount': word_count,
-        'Query': get_reader_frame_duration(query, tari, rtcal, trcal, delim),
-        'QueryRep': get_reader_frame_duration(query_rep, tari, rtcal, trcal,
-                                              delim),
-        'ACK': get_reader_frame_duration(ack, tari, rtcal, trcal, delim),
-        'ReqRN': get_reader_frame_duration(req_rn, tari, rtcal, trcal, delim),
-        'Read': get_reader_frame_duration(read, tari, rtcal, trcal, delim),
-        'RN16': get_tag_frame_duration(query_reply, blf, m, trext),
-        'Response': get_tag_frame_duration(ack_reply, blf, m, trext),
-        'Handle': get_tag_frame_duration(req_rn_reply, blf, m, trext),
-        'Data': get_tag_frame_duration(read_reply, blf, m, trext)
+        'Query': reader_frame_duration(query, tari, rtcal, trcal, delim),
+        'QueryRep': reader_frame_duration(query_rep, tari, rtcal, trcal,
+                                          delim),
+        'ACK': reader_frame_duration(ack, tari, rtcal, trcal, delim),
+        'ReqRN': reader_frame_duration(req_rn, tari, rtcal, trcal, delim),
+        'Read': reader_frame_duration(read, tari, rtcal, trcal, delim),
+        'RN16': tag_frame_duration(query_reply, blf, m, trext),
+        'Response': tag_frame_duration(ack_reply, blf, m, trext),
+        'Handle': tag_frame_duration(req_rn_reply, blf, m, trext),
+        'Data': tag_frame_duration(read_reply, blf, m, trext)
     }
 
     for timer_index in range(1, 8):
@@ -1173,3 +1157,9 @@ def prettify_elementary_timings(timings):
         ret.append(s)
     return "\n".join(ret)
 
+
+#
+#######################################################################
+# Various helpers
+#######################################################################
+#

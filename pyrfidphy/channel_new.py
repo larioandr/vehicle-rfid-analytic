@@ -1,5 +1,5 @@
 import numpy as np
-from numpy import linalg as la
+import numpy.linalg
 import scipy.special as special
 
 
@@ -138,19 +138,19 @@ def two_ray_pathloss(*, time, ground_reflection, wavelen,
 #
 # BER computation functions
 #
-def compute_snr(power, noise):
-    return from_log_scale(power - noise)
+def snr(power, noise):
+    return from_log(power - noise)
 
-def compute_full_snr(*, snr, miller=1, symbol=1.25e-6, preamble=9.3e-6, 
+def snr_full(*, snr, miller=1, symbol=1.25e-6, preamble=9.3e-6, 
                      bandwidth=1.2e6, **kwargs):
     
-    sync_angle = (snr * preamble_duration * bandwidth) ** -0.5
-    return miller * snr * symbol_duration * bandwidth * np.cos(sync_angle) ** 2
+    sync_angle = (snr * preamble * bandwidth) ** -0.5
+    return miller * snr * symbol * bandwidth * np.cos(sync_angle) ** 2
 
 def q_func(x):
     return 0.5 - 0.5 * scipy.special.erf(x / 2 ** 0.5)
 
-def compute_ber(snr, distr='rayleigh'):
+def ber(snr, distr='rayleigh'):
 
     if distr == 'rayleigh':
 
